@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 研学AI助手 H5
 
-## Getting Started
+智能研学旅行助手，支持微信内分享的 H5 应用。基于 Next.js 14 + MiniMax AI API 构建。
 
-First, run the development server:
+## 功能特性
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 💬 **AI 对话**：与研学顾问小智实时对话，获取专业研学建议
+- 🗺️ **行程规划**：输入目的地、天数、年级和兴趣，AI 生成完整研学方案
+- 📄 **报告生成**：填写基本信息，AI 生成结构化研学报告
+- 📤 **微信分享**：支持微信 JSSDK 分享到好友和朋友圈
+- 📱 **移动端优化**：适配 iOS Safari 和微信浏览器
+
+## 技术栈
+
+- **框架**：Next.js 14 (App Router)
+- **AI**：MiniMax API (MiniMax-M2.7 模型)
+- **样式**：纯 CSS (CSS Variables, Flexbox)
+- **部署**：Vercel
+
+## 项目结构
+
+```
+yanxue-h5/
+├── app/
+│   ├── page.tsx          # 主页面（对话、行程规划、报告生成）
+│   ├── layout.tsx        # 根布局
+│   ├── globals.css       # 全局样式
+│   └── api/
+│       └── chat/
+│           └── route.ts  # 流式聊天 API
+├── components/
+│   ├── Header.tsx        # 顶部导航栏
+│   ├── ChatBubble.tsx    # 聊天消息气泡
+│   ├── ChatInput.tsx     # 聊天输入框
+│   └── ShareModal.tsx    # 分享弹窗
+├── lib/
+│   └── minimax.ts       # MiniMax API 客户端
+├── types/
+│   └── jssdk.d.ts        # JSSDK 类型声明
+└── public/
+    └── icon.png          # 应用图标
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 本地开发
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# 安装依赖
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# 启动开发服务器
+npm run dev
 
-## Learn More
+# 构建生产版本
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 环境变量
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `MINIMAX_API_KEY` | MiniMax API 密钥 | 内置测试密钥 |
+| `MINIMAX_MODEL` | AI 模型名称 | MiniMax-M2.7 |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 微信 JSSDK 配置
 
-## Deploy on Vercel
+在微信环境中分享需要后端提供签名服务。生产环境需要：
+1. 在 Vercel 环境变量中配置微信 AppID 和 AppSecret
+2. 部署签名服务接口
+3. 在 `ShareModal.tsx` 中调用签名接口获取 signature
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 部署到 Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+# push 到 GitHub 后，Vercel 会自动部署
+```
+
+## 设计说明
+
+- **设计基准**：375px (iPhone SE/8 宽度)
+- **主色调**：#01C3A3 (青绿色)
+- **次色调**：#0A2463 (深蓝色)
+- **字体**：系统字体栈（-apple-system, PingFang SC, Microsoft YaHei）
+- **圆角**：8px / 12px / 16px / 24px
+- **阴影**：轻量级投影增强层次感
+
+## 许可证
+
+MIT

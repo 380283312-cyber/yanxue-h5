@@ -789,22 +789,24 @@ ${summary || "（用户未填写具体内容）"}
             )}
           </div>
 
-          {/* ── Biz Panel ── */}
-          <div
-            role="tabpanel"
-            className={`tab-panel ${activeTab === "biz" ? "active" : ""}`}
-            style={activeTab === "biz" ? { opacity: 1, pointerEvents: "auto", display: "flex", flexDirection: "column" } : {}}
-          >
-            <div className="biz-panel-wrap" style={{ minHeight: "100%", background: "#f0f9f7", color: "red" }}>
-              <div style={{ padding: "20px", fontWeight: "bold", fontSize: "20px" }}>
-                🔧 B端服务正在加载...
-              </div>
-              <div style={{ padding: "16px", fontSize: "16px" }}>
-                <div style={{ marginBottom: "12px" }}>🏢 机构版</div>
-                <div style={{ marginBottom: "12px" }}>🏫 学校版</div>
+          {/* ── Biz Panel — bypasses tab-content CSS ── */}
+          {activeTab === "biz" && (
+            <div
+              role="tabpanel"
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                background: "#f9fafb",
+                zIndex: 10,
+              }}
+            >
+              <div style={{ padding: "0 16px 24px", flex: 1, overflowY: "auto" }}>
+                <BusinessPanel />
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -18,124 +18,184 @@ export default function PosterCanvas({ url }: PosterCanvasProps) {
     if (!ctx) return;
 
     const W = 600;
-    const H = 820;
+    const H = 900;
     canvas.width = W;
     canvas.height = H;
 
-    // ── Background gradient ──────────────────────────────────────
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "#01C3A3");
-    bg.addColorStop(0.5, "#01879A");
-    bg.addColorStop(1, "#1a1a2e");
-    ctx.fillStyle = bg;
+    // ── Solid dark background ──────────────────────────────────────
+    ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, W, H);
 
-    // ── Decorative circles ─────────────────────────────────────
-    ctx.fillStyle = "rgba(255,255,255,0.06)";
-    ctx.beginPath();
-    ctx.arc(520, 60, 100, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(80, 180, 60, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(480, 280, 40, 0, Math.PI * 2);
-    ctx.fill();
+    // ── Top teal accent bar ───────────────────────────────────────
+    ctx.fillStyle = "#01C3A3";
+    ctx.fillRect(0, 0, W, 6);
 
-    // ── White card (top) ────────────────────────────────────────
-    roundRect(ctx, 30, 60, 540, 180, 20);
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    // ── Decorative circle (top right, subtle) ─────────────────────
+    const radial = ctx.createRadialGradient(W - 80, 120, 10, W - 80, 120, 200);
+    radial.addColorStop(0, "rgba(1,195,163,0.15)");
+    radial.addColorStop(1, "rgba(1,195,163,0)");
+    ctx.fillStyle = radial;
+    ctx.beginPath();
+    ctx.arc(W - 80, 120, 200, 0, Math.PI * 2);
     ctx.fill();
 
     // ── Logo circle ─────────────────────────────────────────────
+    const logoX = 60;
+    const logoY = 120;
+    const logoR = 40;
+
     ctx.fillStyle = "#01C3A3";
     ctx.beginPath();
-    ctx.arc(100, 150, 36, 0, Math.PI * 2);
+    ctx.arc(logoX, logoY, logoR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Logo emoji
-    ctx.fillStyle = "#01C3A3";
-    ctx.fillStyle = "white";
-    ctx.font = "bold 36px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("🎓", 100, 152);
+    // Graduation cap - drawn with paths (no emoji)
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    // Cap body
+    ctx.beginPath();
+    ctx.moveTo(logoX - 18, logoY - 2);
+    ctx.lineTo(logoX, logoY - 12);
+    ctx.lineTo(logoX + 18, logoY - 2);
+    ctx.stroke();
+    // Cap base
+    ctx.beginPath();
+    ctx.moveTo(logoX - 22, logoY);
+    ctx.lineTo(logoX + 22, logoY);
+    ctx.stroke();
+    // Tassel
+    ctx.beginPath();
+    ctx.moveTo(logoX, logoY - 12);
+    ctx.lineTo(logoX + 16, logoY + 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(logoX + 16, logoY + 10);
+    ctx.lineTo(logoX + 22, logoY + 6);
+    ctx.stroke();
 
-    // Title
-    ctx.fillStyle = "#1a1a2e";
-    ctx.font = "bold 30px Arial";
+    // ── Title ─────────────────────────────────────────────────────
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 38px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
-    ctx.fillText("研学顾问小智", 155, 135);
+    ctx.fillText("研学顾问小智", logoX + logoR + 20, logoY + 14);
 
-    // Subtitle
-    ctx.fillStyle = "#666666";
-    ctx.font = "18px Arial";
-    ctx.fillText("AI 智能研学助手", 155, 165);
+    // ── Subtitle ──────────────────────────────────────────────────
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.font = "20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("AI 智能研学助手", logoX + logoR + 20, logoY + 44);
 
-    // Tagline lines
-    ctx.fillStyle = "#444444";
-    ctx.font = "16px Arial";
-    ctx.fillText("输入目的地，AI 帮你生成完整研学方案", 30, 215);
-    ctx.fillText("报告生成 · 行程规划 · 专业咨询", 30, 238);
+    // ── Divider line ───────────────────────────────────────────────
+    ctx.strokeStyle = "rgba(255,255,255,0.1)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 210);
+    ctx.lineTo(W - 40, 210);
+    ctx.stroke();
 
-    // ── Feature cards ────────────────────────────────────────────
-    const features = [
-      { emoji: "🗺️", label: "行程规划", sub: "AI 个性化推荐", x: 30 },
-      { emoji: "📝", label: "报告生成", sub: "一键导出存档", x: 217 },
-      { emoji: "💬", label: "专业咨询", sub: "24h 在线", x: 405 },
-    ];
+    // ── Feature tags ──────────────────────────────────────────────
+    const tags = ["行程规划", "报告生成", "专业咨询"];
+    const tagX = 40;
+    const tagY = 255;
+    const tagGap = 140;
 
-    features.forEach(({ emoji, label, sub, x }) => {
-      roundRect(ctx, x, 270, 165, 90, 14);
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.textAlign = "center";
+    tags.forEach((tag, i) => {
+      const tx = tagX + i * tagGap;
+      // Tag pill background
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      roundRectPath(ctx, tx, tagY, 120, 36, 18);
       ctx.fill();
-      ctx.font = "28px Arial";
-      ctx.textAlign = "center";
+      // Tag text
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
       ctx.textBaseline = "middle";
-      ctx.fillText(emoji, x + 82, 300);
-      ctx.font = "13px Arial";
-      ctx.fillStyle = "#555";
-      ctx.fillText(label, x + 82, 328);
-      ctx.font = "11px Arial";
-      ctx.fillStyle = "#999";
-      ctx.fillText(sub, x + 82, 348);
+      ctx.fillText(tag, tx + 60, tagY + 18);
     });
 
-    // ── QR Code card ─────────────────────────────────────────────
-    roundRect(ctx, 30, 390, 540, 340, 24);
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    // ── QR code card ───────────────────────────────────────────────
+    const cardX = 40;
+    const cardY = 330;
+    const cardW = W - 80;
+    const cardH = cardW + 60; // slightly taller for text below QR
+
+    // Card background
+    ctx.fillStyle = "#ffffff";
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, 20);
     ctx.fill();
 
-    // Generate and draw QR code
+    // QR code zone
+    const qrSize = cardW - 60;
+    const qrX = cardX + 30;
+    const qrY = cardY + 30;
+
+    // Generate QR and draw
     QRCode.toDataURL(url, {
-      width: 280,
-      margin: 2,
-      color: { dark: "#1a1a2e", light: "#ffffff" },
+      width: qrSize,
+      margin: 3,
+      color: { dark: "#0f172a", light: "#ffffff" },
     }).then((dataUrl) => {
       const img = new Image();
       img.onload = () => {
-        ctx.drawImage(img, 160, 415, 280, 280);
+        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
 
-        // Bottom text
-        ctx.fillStyle = "#1a1a2e";
-        ctx.font = "bold 18px Arial";
+        // Scan line animation hint (decorative corner marks)
+        const cornerSize = 16;
+        ctx.strokeStyle = "#01C3A3";
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        // TL
+        ctx.beginPath();
+        ctx.moveTo(qrX, qrY + cornerSize);
+        ctx.lineTo(qrX, qrY);
+        ctx.lineTo(qrX + cornerSize, qrY);
+        ctx.stroke();
+        // TR
+        ctx.beginPath();
+        ctx.moveTo(qrX + qrSize - cornerSize, qrY);
+        ctx.lineTo(qrX + qrSize, qrY);
+        ctx.lineTo(qrX + qrSize, qrY + cornerSize);
+        ctx.stroke();
+        // BL
+        ctx.beginPath();
+        ctx.moveTo(qrX, qrY + qrSize - cornerSize);
+        ctx.lineTo(qrX, qrY + qrSize);
+        ctx.lineTo(qrX + cornerSize, qrY + qrSize);
+        ctx.stroke();
+        // BR
+        ctx.beginPath();
+        ctx.moveTo(qrX + qrSize - cornerSize, qrY + qrSize);
+        ctx.lineTo(qrX + qrSize, qrY + qrSize);
+        ctx.lineTo(qrX + qrSize, qrY + qrSize - cornerSize);
+        ctx.stroke();
+
+        // Bottom text in card
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "alphabetic";
-        ctx.fillText("长按识别二维码", 300, 740);
-        ctx.fillStyle = "#888888";
-        ctx.font = "14px Arial";
-        ctx.fillText("立即体验 AI 研学之旅", 300, 765);
+        ctx.fillText("长按识别二维码", W / 2, qrY + qrSize + 38);
 
-        // URL bar
-        roundRect(ctx, 30, 785, 540, 30, 8);
-        ctx.fillStyle = "#f0f9f7";
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("立即体验 AI 研学之旅", W / 2, qrY + qrSize + 62);
+
+        // ── Bottom URL bar ──────────────────────────────────────────
+        ctx.fillStyle = "#1e293b";
+        roundRectPath(ctx, 40, cardY + cardH + 24, cardW, 44, 12);
         ctx.fill();
-        ctx.fillStyle = "#01C3A3";
-        ctx.font = "13px Arial";
-        ctx.fillText("www.woaiyanxue.cn", 300, 805);
 
-        // Trigger download
+        ctx.fillStyle = "#01C3A3";
+        ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("www.woaiyanxue.cn", W / 2, cardY + cardH + 46);
+
+        // ── Trigger download ─────────────────────────────────────────
         triggerDownload(canvas);
       };
       img.src = dataUrl;
@@ -161,7 +221,7 @@ function triggerDownload(canvas: HTMLCanvasElement) {
   document.body.removeChild(a);
 }
 
-function roundRect(
+function roundRectPath(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,

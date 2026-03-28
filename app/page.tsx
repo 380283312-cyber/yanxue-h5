@@ -4,7 +4,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
-import BusinessPanel from "@/components/BusinessPanel";
 import { streamChat, buildSystemPrompt } from "@/lib/minimax";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
@@ -32,7 +31,7 @@ const QUICK_PROMPTS = [
 
 // ─── Tab Type ────────────────────────────────────────────────────────────────
 
-type Tab = "chat" | "itinerary" | "report" | "biz";
+type Tab = "chat" | "itinerary" | "report";
 
 // ─── Itinerary Form ─────────────────────────────────────────────────────────
 
@@ -388,7 +387,6 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
-          { id: "biz", label: "B端服务", icon: "🏢" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -438,6 +436,25 @@ ${summary || "（用户未填写具体内容）"}
                       </button>
                     ))}
                   </div>
+
+                  <a
+                    href="/biz"
+                    style={{
+                      display: "block",
+                      marginTop: "16px",
+                      padding: "14px",
+                      background: "linear-gradient(135deg, #0a2463 0%, #1a3a7a 100%)",
+                      color: "white",
+                      borderRadius: "14px",
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      textDecoration: "none",
+                      textAlign: "center",
+                      boxShadow: "0 4px 12px rgba(10,36,99,0.3)",
+                    }}
+                  >
+                    🏢 B端服务 — 机构/学校专属宣传材料生成
+                  </a>
                 </div>
               )}
 
@@ -787,28 +804,6 @@ ${summary || "（用户未填写具体内容）"}
                 </div>
               </div>
             )}
-          </div>
-
-          {/* ── Biz Panel — always rendered, controlled by CSS ── */}
-          <div
-            role="tabpanel"
-            id="biz-panel"
-            aria-hidden={activeTab !== "biz"}
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              flexDirection: "column",
-              background: "#f9fafb",
-              zIndex: 10,
-              opacity: activeTab === "biz" ? 1 : 0,
-              pointerEvents: activeTab === "biz" ? "auto" : "none",
-              transition: "opacity 0.25s ease",
-            }}
-          >
-            <div style={{ padding: "0 16px 24px", flex: 1, overflowY: "auto" }}>
-              <BusinessPanel />
-            </div>
           </div>
         </div>
       </div>

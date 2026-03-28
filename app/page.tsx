@@ -796,6 +796,9 @@ ${summary || "（用户未填写具体内容）"}
             style={activeTab === "biz" ? { opacity: 1, pointerEvents: "auto", display: "flex", flexDirection: "column" } : {}}
           >
             <div className="biz-panel-wrap" style={{ minHeight: "100%", background: "#f0f9f7" }}>
+              <div style={{ padding: "20px", color: "#01C3A3", fontWeight: "bold", textAlign: "center" }}>
+                B端服务加载中...
+              </div>
               <BusinessPanel />
             </div>
           </div>

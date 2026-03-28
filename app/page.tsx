@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
@@ -57,6 +58,7 @@ interface ReportFormData {
 // ─── Main Page Component ─────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -387,13 +389,14 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
+          { id: "biz", label: "B端服务", icon: "🏢" },
         ].map((tab) => (
           <button
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
             className={`tab-item ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.id as Tab)}
+            onClick={() => tab.id === "biz" ? router.push("/biz") : setActiveTab(tab.id as Tab)}
           >
             <span className="tab-icon">{tab.icon}</span>
             {tab.label}
@@ -436,25 +439,6 @@ ${summary || "（用户未填写具体内容）"}
                       </button>
                     ))}
                   </div>
-
-                  <a
-                    href="/biz"
-                    style={{
-                      display: "block",
-                      marginTop: "16px",
-                      padding: "14px",
-                      background: "linear-gradient(135deg, #0a2463 0%, #1a3a7a 100%)",
-                      color: "white",
-                      borderRadius: "14px",
-                      fontSize: "15px",
-                      fontWeight: 700,
-                      textDecoration: "none",
-                      textAlign: "center",
-                      boxShadow: "0 4px 12px rgba(10,36,99,0.3)",
-                    }}
-                  >
-                    🏢 B端服务 — 机构/学校专属宣传材料生成
-                  </a>
                 </div>
               )}
 

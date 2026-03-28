@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
+import BusinessPanel from "@/components/BusinessPanel";
 import { streamChat, buildSystemPrompt } from "@/lib/minimax";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ const QUICK_PROMPTS = [
 
 // ─── Tab Type ────────────────────────────────────────────────────────────────
 
-type Tab = "chat" | "itinerary" | "report";
+type Tab = "chat" | "itinerary" | "report" | "biz";
 
 // ─── Itinerary Form ─────────────────────────────────────────────────────────
 
@@ -387,6 +388,7 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
+          { id: "biz", label: "机构/学校", icon: "🏢" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -785,6 +787,16 @@ ${summary || "（用户未填写具体内容）"}
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ── Biz Panel ── */}
+          <div
+            role="tabpanel"
+            className={`tab-panel ${activeTab === "biz" ? "active" : ""}`}
+          >
+            <div className="biz-panel-wrap">
+              <BusinessPanel />
+            </div>
           </div>
         </div>
       </div>

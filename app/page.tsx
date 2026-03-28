@@ -1,21 +1,11 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import dynamic from "next/dynamic";
 import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import BusinessPanel from "@/components/BusinessPanel";
 import { streamChat, buildSystemPrompt } from "@/lib/minimax";
-
-const BusinessPanel = dynamic(() => import("@/components/BusinessPanel"), {
-  ssr: false,
-  loading: () => (
-    <div style={{ padding: "24px", textAlign: "center", color: "#666", fontSize: "14px" }}>
-      加载中...
-    </div>
-  ),
-});
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
 
@@ -817,9 +807,7 @@ ${summary || "（用户未填写具体内容）"}
             }}
           >
             <div style={{ padding: "0 16px 24px", flex: 1, overflowY: "auto" }}>
-              <ErrorBoundary>
-                <BusinessPanel />
-              </ErrorBoundary>
+              <BusinessPanel />
             </div>
           </div>
         </div>

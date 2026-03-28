@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
 import BusinessPanel from "@/components/BusinessPanel";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { streamChat, buildSystemPrompt } from "@/lib/minimax";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
@@ -803,7 +804,9 @@ ${summary || "（用户未填写具体内容）"}
               }}
             >
               <div style={{ padding: "0 16px 24px", flex: 1, overflowY: "auto" }}>
-                <BusinessPanel />
+                <ErrorBoundary>
+                  <BusinessPanel />
+                </ErrorBoundary>
               </div>
             </div>
           )}

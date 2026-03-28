@@ -144,9 +144,12 @@ export default function BizPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        height: "100dvh",
         background: "#f3f4f6",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif",
+        overflow: "hidden",
       }}
     >
       {/* Header */}
@@ -175,7 +178,7 @@ export default function BizPage() {
         <div style={{ width: 40 }} />
       </div>
 
-      <div style={{ padding: "16px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
         {view === "form" ? (
           <>
             {/* Type toggle */}

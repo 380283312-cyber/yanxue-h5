@@ -195,9 +195,9 @@ a {
 
 .tab-item {
   flex: 1;
-  padding: 12px 8px;
+  padding: 10px 4px;
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--gray-500);
   background: var(--white);
@@ -205,6 +205,8 @@ a {
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
   position: relative;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .tab-item.active {

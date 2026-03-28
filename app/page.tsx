@@ -388,7 +388,7 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
-          { id: "biz", label: "机构/学校", icon: "🏢" },
+          { id: "biz", label: "B端服务", icon: "🏢" },
         ].map((tab) => (
           <button
             key={tab.id}

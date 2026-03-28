@@ -790,26 +790,29 @@ ${summary || "（用户未填写具体内容）"}
             )}
           </div>
 
-          {/* ── Biz Panel — bypasses tab-content CSS ── */}
-          {activeTab === "biz" && (
-            <div
-              role="tabpanel"
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                flexDirection: "column",
-                background: "#f9fafb",
-                zIndex: 10,
-              }}
-            >
-              <div style={{ padding: "0 16px 24px", flex: 1, overflowY: "auto" }}>
-                <ErrorBoundary>
-                  <BusinessPanel />
-                </ErrorBoundary>
-              </div>
+          {/* ── Biz Panel — always rendered, controlled by CSS ── */}
+          <div
+            role="tabpanel"
+            id="biz-panel"
+            aria-hidden={activeTab !== "biz"}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              background: "#f9fafb",
+              zIndex: 10,
+              opacity: activeTab === "biz" ? 1 : 0,
+              pointerEvents: activeTab === "biz" ? "auto" : "none",
+              transition: "opacity 0.25s ease",
+            }}
+          >
+            <div style={{ padding: "0 16px 24px", flex: 1, overflowY: "auto" }}>
+              <ErrorBoundary>
+                <BusinessPanel />
+              </ErrorBoundary>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

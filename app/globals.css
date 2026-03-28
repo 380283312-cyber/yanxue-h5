@@ -949,6 +949,89 @@ a {
   color: var(--gray-500);
 }
 
+/* Primary action buttons */
+.share-primary-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.share-primary-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px;
+  border-radius: var(--radius-xl);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.share-primary-btn:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+.share-primary-btn.poster {
+  background: var(--primary);
+  color: white;
+}
+
+.share-primary-btn.copy {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.share-primary-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-primary-btn.poster .share-primary-icon {
+  background: rgba(255,255,255,0.2);
+}
+
+.share-primary-btn.copy .share-primary-icon {
+  background: var(--gray-200);
+}
+
+.share-primary-label {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.share-primary-sub {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+/* WeChat tip */
+.share-wechat-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gray-400);
+  text-align: center;
+  line-height: 1.5;
+  padding: 10px 16px;
+  background: var(--gray-50);
+  border-radius: var(--radius-lg);
+}
+
+.share-wechat-tip-arrow {
+  color: var(--primary);
+  font-weight: 700;
+}
+
 .share-cancel-btn {
   width: 100%;
   padding: 14px;
@@ -968,14 +1051,17 @@ a {
   transform: translateX(-50%) translateY(-20px);
   background: var(--gray-800);
   color: var(--white);
-  padding: 10px 20px;
-  border-radius: var(--radius-full);
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   z-index: 2000;
   opacity: 0;
   pointer-events: none;
   transition: all 0.3s ease;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  max-width: 300px;
+  text-align: center;
 }
 
 .toast.visible {

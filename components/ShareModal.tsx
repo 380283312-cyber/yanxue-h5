@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PosterCanvas from "./PosterCanvas";
 
 interface ShareModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
+const SHARE_URL = "https://www.woaiyanxue.cn";
+const SHARE_TITLE = "研学AI助手 - 智能规划研学之旅";
+const SHARE_DESC = "输入目的地和天数，AI帮你生成完整研学方案";
+
 export default function ShareModal({ visible, onClose }: ShareModalProps) {
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [posterKey, setPosterKey] = useState(0);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -18,7 +24,7 @@ export default function ShareModal({ visible, onClose }: ShareModalProps) {
   };
 
   const handleCopy = async () => {
-    const shareText = `研学AI助手 - 智能规划研学之旅\n输入目的地和天数，AI帮你生成完整研学方案\n\n👉 https://yanxue-ai.vercel.app`;
+    const shareText = `${SHARE_TITLE}\n${SHARE_DESC}\n\n👉 ${SHARE_URL}`;
     try {
       await navigator.clipboard.writeText(shareText);
       showToast("链接已复制到剪贴板");
@@ -27,21 +33,25 @@ export default function ShareModal({ visible, onClose }: ShareModalProps) {
     }
   };
 
+  const handleDownloadPoster = () => {
+    // Re-mount the canvas to trigger download via useEffect
+    setPosterKey((k) => k + 1);
+    showToast("海报生成中...");
+  };
+
   const handleWechatShare = () => {
-    // In WeChat browser, use JSSDK
     if (typeof window !== "undefined" && (window as any).wx) {
       (window as any).wx.ready(() => {
         (window as any).wx.shareAppMessage({
-          title: "研学AI助手 - 智能规划研学之旅",
-          desc: "输入目的地和天数，AI帮你生成完整研学方案",
-          link: "https://yanxue-ai.vercel.app",
-          imgUrl: "https://yanxue-ai.vercel.app/icon.png",
+          title: SHARE_TITLE,
+          desc: SHARE_DESC,
+          link: SHARE_URL,
+          imgUrl: `${SHARE_URL}/icon.png`,
           success: () => showToast("分享成功"),
           fail: () => showToast("分享失败"),
         });
       });
     } else {
-      // Not in WeChat, show copy option
       handleCopy();
     }
   };
@@ -107,6 +117,17 @@ export default function ShareModal({ visible, onClose }: ShareModalProps) {
               </div>
               <span className="share-action-label">复制链接</span>
             </button>
+
+            <button className="share-action-item" onClick={handleDownloadPoster}>
+              <div className="share-action-icon poster">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18"/>
+                  <path d="M9 21V9"/>
+                </svg>
+              </div>
+              <span className="share-action-label">保存海报</span>
+            </button>
           </div>
 
           <button className="share-cancel-btn" onClick={onClose}>
@@ -118,6 +139,8 @@ export default function ShareModal({ visible, onClose }: ShareModalProps) {
       <div className={`toast ${toastVisible ? "visible" : ""}`} role="status" aria-live="polite">
         {toast}
       </div>
+
+      {posterKey > 0 && <PosterCanvas key={posterKey} url={SHARE_URL} />}
     </>
   );
 }

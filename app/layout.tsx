@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://yanxue-ai.vercel.app"),
+  metadataBase: new URL("https://www.woaiyanxue.cn"),
   title: "研学AI助手 - 智能规划研学之旅",
   description: "输入目的地和天数，AI帮你生成完整研学方案",
   keywords: "研学,AI,智能规划,行程规划,研学课程",

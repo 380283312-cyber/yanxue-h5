@@ -928,7 +928,21 @@ a {
 .share-action-icon.wechat { background: #07c160; color: white; }
 .share-action-icon.friend { background: #576ef0; color: white; }
 .share-action-icon.copy { background: var(--gray-200); color: var(--gray-600); }
-.share-action-icon.save { background: var(--gray-200); color: var(--gray-600); }
+.share-action-icon.poster { background: var(--primary); color: white; }
+
+.share-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 3px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 .share-action-label {
   font-size: 12px;

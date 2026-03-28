@@ -793,8 +793,9 @@ ${summary || "（用户未填写具体内容）"}
           <div
             role="tabpanel"
             className={`tab-panel ${activeTab === "biz" ? "active" : ""}`}
+            style={activeTab === "biz" ? { opacity: 1, pointerEvents: "auto", display: "flex", flexDirection: "column" } : {}}
           >
-            <div className="biz-panel-wrap">
+            <div className="biz-panel-wrap" style={{ minHeight: "100%", background: "#f0f9f7" }}>
               <BusinessPanel />
             </div>
           </div>

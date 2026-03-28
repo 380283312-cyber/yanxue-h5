@@ -2,106 +2,528 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { streamChat, buildSystemPrompt } from "@/lib/minimax";
+
+type BizType = "org" | "school";
+
+const SHARE_URL = "https://www.woaiyanxue.cn";
 
 export default function BizPage() {
-  const [type, setType] = useState<"org" | "school">("org");
-  const [orgName, setOrgName] = useState("");
+  const [bizType, setBizType] = useState<BizType>("org");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [view, setView] = useState<"form" | "result">("form");
+
+  // Org form
+  const [orgForm, setOrgForm] = useState({
+    name: "",
+    type: "研学基地",
+    location: "",
+    targetAge: "小学3-6年级",
+    features: "",
+    price: "",
+  });
+
+  // School form
+  const [schoolForm, setSchoolForm] = useState({
+    name: "",
+    grade: "初一",
+    theme: "",
+    days: "3",
+    location: "",
+    budget: "",
+  });
+
+  const buildOrgPrompt = () =>
+    `你是一位专业的研学营销文案专家。请为以下研学机构生成一套完整的宣传材料：
+
+机构名称：${orgForm.name}
+机构类型：${orgForm.type}
+所在地：${orgForm.location}
+适合年龄段：${orgForm.targetAge}
+核心特色：${orgForm.features || "（未填写）"}
+参考价格：${orgForm.price || "（未填写）"}
+
+请生成以下三部分内容：
+
+---
+## 一、机构专属宣传页（约300字）
+
+包含：一句话卖点、机构介绍、为什么选我们（3个亮点）、适合人群推荐
+
+---
+## 二、致家长的一封信（约400字）
+
+格式规范，语气专业温暖，包含：活动意义、行程亮点、安全保障、期待参与
+
+---
+## 三、3天研学行程大纲
+
+按日期分，写清楚每天的主题、活动内容、学习目标
+
+---
+要求：语言专业有吸引力，适合微信传播。`;
+
+  const buildSchoolPrompt = () =>
+    `你是一位专业的学校研学活动策划专家。请为以下学校生成一套完整的研学活动方案：
+
+学校名称：${schoolForm.name}
+活动主题：${schoolForm.theme}
+适合年级：${schoolForm.grade}
+活动时长：${schoolForm.days}天
+活动地点：${schoolForm.location || "（待定）"}
+预算范围：${schoolForm.budget || "（待定）"}
+
+请生成以下三部分内容：
+
+---
+## 一、研学活动方案（约500字）
+
+包含：活动背景、活动目标、主题解读、行程安排（按天）、学习评估方式
+
+---
+## 二、致家长的一封信（约400字）
+
+包含：活动意义、行程安排、安全保障措施、所需物品清单、家长配合事项
+
+---
+## 三、安全预案要点
+
+包含：风险识别、预防措施、应急处理流程、责任分工
+
+---
+要求：符合学校规范，语言严谨专业，适合直接使用。`;
 
   const handleGenerate = async () => {
-    if (!orgName.trim()) return;
+    const prompt = bizType === "org" ? buildOrgPrompt() : buildSchoolPrompt();
     setLoading(true);
     setResult("");
-    // Simulate AI generation - replace with real API call later
-    setTimeout(() => {
-      setResult(`✅ 已为「${orgName}」生成宣传材料！\n\n（完整功能正在开发中，即将上线）`);
+    setView("result");
+
+    let fullResponse = "";
+
+    try {
+      await streamChat({
+        messages: [
+          { role: "user" as const, content: buildSystemPrompt() },
+          { role: "user" as const, content: prompt },
+        ],
+        apiKey:
+          process.env.NEXT_PUBLIC_MINIMAX_API_KEY ??
+          "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E",
+        onChunk: (text) => {
+          fullResponse += text;
+          setResult(fullResponse);
+        },
+        onDone: () => setLoading(false),
+        onError: (err) => {
+          setResult(`生成失败：${err.message}`);
+          setLoading(false);
+        },
+      });
+    } catch (err) {
+      setResult(`生成失败：${err instanceof Error ? err.message : "未知错误"}`);
       setLoading(false);
-    }, 2000);
+    }
   };
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      alert("已复制到剪贴板");
+    } catch {
+      alert(result);
+    }
+  };
+
+  const canGenerate =
+    bizType === "org"
+      ? orgForm.name.trim()
+      : schoolForm.name.trim() && schoolForm.theme.trim();
+
   return (
-    <div style={{ minHeight: "100vh", background: "#f3f4f6", fontFamily: "-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f3f4f6",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif",
+      }}
+    >
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, #01C3A3 0%, #01879A 100%)", color: "white", padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
-        <Link href="/" style={{ color: "white", fontSize: "14px", textDecoration: "none" }}>← 返回</Link>
-        <span style={{ fontSize: "17px", fontWeight: 600 }}>🏢 B端服务</span>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #0a2463 0%, #1a3a7a 100%)",
+          color: "white",
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+        }}
+      >
+        <Link
+          href="/"
+          style={{ color: "white", fontSize: "14px", textDecoration: "none", flexShrink: 0 }}
+        >
+          ← 返回
+        </Link>
+        <span style={{ fontSize: "17px", fontWeight: 600, flex: 1, textAlign: "center" }}>
+          🏢 B端服务
+        </span>
+        <div style={{ width: 40 }} />
       </div>
 
-      {/* Content */}
-      <div style={{ padding: "20px 16px" }}>
-        {/* Type toggle */}
-        <div style={{ display: "flex", gap: "8px", background: "#e5e7eb", borderRadius: "16px", padding: "4px", marginBottom: "20px" }}>
-          <button
-            onClick={() => setType("org")}
-            style={{
-              flex: 1, padding: "10px", borderRadius: "12px",
-              background: type === "org" ? "white" : "transparent",
-              color: type === "org" ? "#01C3A3" : "#6b7280",
-              border: "none", fontWeight: 600, fontSize: "14px", cursor: "pointer",
-            }}
-          >
-            🏢 机构版
-          </button>
-          <button
-            onClick={() => setType("school")}
-            style={{
-              flex: 1, padding: "10px", borderRadius: "12px",
-              background: type === "school" ? "white" : "transparent",
-              color: type === "school" ? "#01C3A3" : "#6b7280",
-              border: "none", fontWeight: 600, fontSize: "14px", cursor: "pointer",
-            }}
-          >
-            🏫 学校版
-          </button>
-        </div>
+      <div style={{ padding: "16px" }}>
+        {view === "form" ? (
+          <>
+            {/* Type toggle */}
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                background: "#e5e7eb",
+                borderRadius: "16px",
+                padding: "4px",
+                marginBottom: "16px",
+              }}
+            >
+              {(["org", "school"] as BizType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBizType(t)}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    borderRadius: "12px",
+                    background: bizType === t ? "white" : "transparent",
+                    color: bizType === t ? "#0a2463" : "#6b7280",
+                    border: "none",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    boxShadow: bizType === t ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                  }}
+                >
+                  {t === "org" ? "🏢 机构版" : "🏫 学校版"}
+                </button>
+              ))}
+            </div>
 
-        {/* Form */}
-        <div style={{ background: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-          <h2 style={{ color: "#0a2463", fontSize: "18px", fontWeight: 700, marginBottom: "4px" }}>
-            {type === "org" ? "🏢 机构宣传材料生成" : "🏫 学校研学方案生成"}
-          </h2>
-          <p style={{ color: "#6b7280", fontSize: "13px", marginBottom: "16px" }}>
-            {type === "org"
-              ? "输入机构信息，AI 生成专属宣传页、家长信、行程大纲"
-              : "输入学校和活动信息，AI 生成完整研学方案、家长信、安全预案"}
-          </p>
+            {/* Form card */}
+            <div
+              style={{
+                background: "white",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              }}
+            >
+              <h2
+                style={{
+                  color: "#0a2463",
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  marginBottom: "4px",
+                }}
+              >
+                {bizType === "org"
+                  ? "🏢 机构宣传材料生成"
+                  : "🏫 学校研学方案生成"}
+              </h2>
+              <p style={{ color: "#6b7280", fontSize: "13px", marginBottom: "16px", lineHeight: 1.5 }}>
+                {bizType === "org"
+                  ? "输入机构信息，AI 生成专属宣传页、家长信、行程大纲"
+                  : "输入学校和活动信息，AI 生成完整研学方案、家长信、安全预案"}
+              </p>
 
-          <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", color: "#374151", fontSize: "13px", fontWeight: 500, marginBottom: "6px" }}>
-              {type === "org" ? "机构名称 *" : "学校名称 *"}
-            </label>
-            <input
-              style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #e5e7eb", borderRadius: "12px", fontSize: "15px", outline: "none", boxSizing: "border-box" }}
-              placeholder={type === "org" ? "例如：北京探知研学基地" : "例如：北京市第一中学"}
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-            />
-          </div>
+              {bizType === "org" ? (
+                <>
+                  <FormGroup label="机构名称 *" required>
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：北京探知研学基地"
+                      value={orgForm.name}
+                      onChange={(e) => setOrgForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                  </FormGroup>
+                  <FormRow>
+                    <FormGroup label="机构类型">
+                      <select
+                        style={inputStyle}
+                        value={orgForm.type}
+                        onChange={(e) => setOrgForm((f) => ({ ...f, type: e.target.value }))}
+                      >
+                        {["研学基地", "营地", "旅行社", "培训机构", "其他"].map((t) => (
+                          <option key={t}>{t}</option>
+                        ))}
+                      </select>
+                    </FormGroup>
+                    <FormGroup label="适合年龄">
+                      <select
+                        style={inputStyle}
+                        value={orgForm.targetAge}
+                        onChange={(e) => setOrgForm((f) => ({ ...f, targetAge: e.target.value }))}
+                      >
+                        {["小学1-2年级", "小学3-6年级", "初中生", "高中生", "全年龄段"].map(
+                          (a) => (
+                            <option key={a}>{a}</option>
+                          )
+                        )}
+                      </select>
+                    </FormGroup>
+                  </FormRow>
+                  <FormGroup label="所在地">
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：北京·延庆"
+                      value={orgForm.location}
+                      onChange={(e) => setOrgForm((f) => ({ ...f, location: e.target.value }))}
+                    />
+                  </FormGroup>
+                  <FormGroup label="核心特色">
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：自然探索、科技体验、历史文化"
+                      value={orgForm.features}
+                      onChange={(e) => setOrgForm((f) => ({ ...f, features: e.target.value }))}
+                    />
+                  </FormGroup>
+                  <FormGroup label="参考价格（选填）">
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：499元/人起"
+                      value={orgForm.price}
+                      onChange={(e) => setOrgForm((f) => ({ ...f, price: e.target.value }))}
+                    />
+                  </FormGroup>
+                </>
+              ) : (
+                <>
+                  <FormGroup label="学校名称 *" required>
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：北京市第一中学"
+                      value={schoolForm.name}
+                      onChange={(e) => setSchoolForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                  </FormGroup>
+                  <FormRow>
+                    <FormGroup label="参与年级">
+                      <select
+                        style={inputStyle}
+                        value={schoolForm.grade}
+                        onChange={(e) => setSchoolForm((f) => ({ ...f, grade: e.target.value }))}
+                      >
+                        {[
+                          "小学3年级", "小学4年级", "小学5年级", "小学6年级",
+                          "初一", "初二", "初三", "高一", "高二", "高三",
+                        ].map((g) => (
+                          <option key={g}>{g}</option>
+                        ))}
+                      </select>
+                    </FormGroup>
+                    <FormGroup label="活动天数">
+                      <select
+                        style={inputStyle}
+                        value={schoolForm.days}
+                        onChange={(e) => setSchoolForm((f) => ({ ...f, days: e.target.value }))}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                          <option key={d}>{d}天</option>
+                        ))}
+                      </select>
+                    </FormGroup>
+                  </FormRow>
+                  <FormGroup label="研学主题 *" required>
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：走进人工智能，体验科技魅力"
+                      value={schoolForm.theme}
+                      onChange={(e) => setSchoolForm((f) => ({ ...f, theme: e.target.value }))}
+                    />
+                  </FormGroup>
+                  <FormGroup label="活动地点（选填）">
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：深圳·腾讯总部"
+                      value={schoolForm.location}
+                      onChange={(e) => setSchoolForm((f) => ({ ...f, location: e.target.value }))}
+                    />
+                  </FormGroup>
+                  <FormGroup label="预算范围（选填）">
+                    <input
+                      style={inputStyle}
+                      placeholder="例如：500-800元/人"
+                      value={schoolForm.budget}
+                      onChange={(e) => setSchoolForm((f) => ({ ...f, budget: e.target.value }))}
+                    />
+                  </FormGroup>
+                </>
+              )}
 
-          <button
-            onClick={handleGenerate}
-            disabled={!orgName.trim() || loading}
-            style={{
-              width: "100%", padding: "14px", marginTop: "8px",
-              background: orgName.trim() && !loading
-                ? "linear-gradient(135deg, #01C3A3 0%, #01879A 100%)"
-                : "#d1d5db",
-              color: "white", border: "none", borderRadius: "16px",
-              fontSize: "16px", fontWeight: 600, cursor: orgName.trim() && !loading ? "pointer" : "not-allowed",
-            }}
-          >
-            {loading ? "🔄 生成中..." : "🚀 一键生成宣传材料"}
-          </button>
-        </div>
+              <button
+                onClick={handleGenerate}
+                disabled={!canGenerate || loading}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  marginTop: "8px",
+                  background: canGenerate && !loading
+                    ? "linear-gradient(135deg, #0a2463 0%, #1a3a7a 100%)"
+                    : "#d1d5db",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "16px",
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  cursor: canGenerate && !loading ? "pointer" : "not-allowed",
+                  boxShadow: canGenerate && !loading ? "0 4px 12px rgba(10,36,99,0.3)" : "none",
+                }}
+              >
+                {loading ? "🔄 生成中，请稍候..." : "🚀 一键生成宣传材料"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Result view */}
+            <div
+              style={{
+                background: "white",
+                borderRadius: "16px",
+                padding: "20px",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                marginBottom: "16px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <span style={{ color: "#0a2463", fontSize: "16px", fontWeight: 700 }}>
+                  {bizType === "org" ? "🏢 机构宣传材料" : "🏫 学校研学方案"}
+                </span>
+                <button
+                  onClick={() => setView("form")}
+                  style={{
+                    background: "#f3f4f6",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "20px",
+                    padding: "6px 14px",
+                    fontSize: "13px",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                  }}
+                >
+                  ← 重新生成
+                </button>
+              </div>
 
-        {/* Result */}
-        {result && (
-          <div style={{ marginTop: "16px", background: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <div style={{ color: "#374151", fontSize: "14px", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{result}</div>
-          </div>
+              <div
+                style={{
+                  color: "#374151",
+                  fontSize: "14px",
+                  lineHeight: 1.8,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {result}
+                {loading && (
+                  <span style={{ display: "inline-block", marginLeft: "8px" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "6px",
+                        height: "6px",
+                        background: "#0a2463",
+                        borderRadius: "50%",
+                        marginRight: "4px",
+                        animation: "bounce 1.4s infinite",
+                      }}
+                    />
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleCopy}
+              style={{
+                width: "100%",
+                padding: "14px",
+                background: "white",
+                border: "1.5px solid #0a2463",
+                borderRadius: "16px",
+                color: "#0a2463",
+                fontSize: "15px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              📋 复制结果
+            </button>
+          </>
         )}
       </div>
+
+      <style>{`
+        @keyframes bounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-4px); }
+        }
+      `}</style>
     </div>
   );
 }
+
+function FormGroup({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
+  return (
+    <div style={{ marginBottom: "12px" }}>
+      <label
+        style={{
+          display: "block",
+          color: "#374151",
+          fontSize: "13px",
+          fontWeight: 500,
+          marginBottom: "6px",
+        }}
+      >
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function FormRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "12px",
+        marginBottom: "12px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "12px 14px",
+  border: "1.5px solid #e5e7eb",
+  borderRadius: "12px",
+  fontSize: "15px",
+  outline: "none",
+  boxSizing: "border-box",
+  color: "#374151",
+  background: "white",
+};

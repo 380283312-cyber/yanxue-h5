@@ -795,11 +795,14 @@ ${summary || "（用户未填写具体内容）"}
             className={`tab-panel ${activeTab === "biz" ? "active" : ""}`}
             style={activeTab === "biz" ? { opacity: 1, pointerEvents: "auto", display: "flex", flexDirection: "column" } : {}}
           >
-            <div className="biz-panel-wrap" style={{ minHeight: "100%", background: "#f0f9f7" }}>
-              <div style={{ padding: "20px", color: "#01C3A3", fontWeight: "bold", textAlign: "center" }}>
-                B端服务加载中...
+            <div className="biz-panel-wrap" style={{ minHeight: "100%", background: "#f0f9f7", color: "red" }}>
+              <div style={{ padding: "20px", fontWeight: "bold", fontSize: "20px" }}>
+                🔧 B端服务正在加载...
               </div>
-              <BusinessPanel />
+              <div style={{ padding: "16px", fontSize: "16px" }}>
+                <div style={{ marginBottom: "12px" }}>🏢 机构版</div>
+                <div style={{ marginBottom: "12px" }}>🏫 学校版</div>
+              </div>
             </div>
           </div>
         </div>

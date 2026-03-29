@@ -13,25 +13,25 @@ import { streamChat, buildSystemPrompt } from "@/lib/minimax";
 
 const QUICK_PROMPTS = [
   {
-    label: "帮我搜西安的研学课程（搜索目的地、路线）",
+    label: "🔍 帮我搜西安的研学课程",
     icon: "🔍",
     accent: "#3b82f6",
     prompt: "请从研学知识库中搜索西安的研学课程，包括课程名称、适合年级、天数、费用、亮点介绍。",
   },
   {
-    label: "帮我规划成都5天研学（生成完整行程方案）",
+    label: "🗺️ 帮我规划成都5天研学",
     icon: "🗺️",
     accent: "#f59e0b",
     prompt: "请为初中生规划一份成都5天研学行程，包含每天景点安排、学习目标、费用预算和行前准备清单。",
   },
   {
-    label: "生成我的研学报告（模板 + AI 辅助撰写）",
+    label: "📝 生成我的研学报告",
     icon: "📝",
     accent: "#8b5cf6",
     prompt: "请帮我生成一份研学报告模板，包含：基本信息、研学概要、详细记录（按天）、收获与反思、评语区域。需要填写的内容请用占位符标注。",
   },
   {
-    label: "帮我配置研学方案（面向学校/基地）",
+    label: "⚙️ 帮我配置研学方案",
     icon: "⚙️",
     accent: "#01c3a3",
     prompt: "我需要为学校（或研学基地）配置一套研学课程方案。请根据我的需求推荐合适的研学主题、目标客群（年级段）、课程时长、费用区间、特色亮点，以及配套的行程建议和营销卖点。",
@@ -41,7 +41,7 @@ const QUICK_PROMPTS = [
 
 // ─── Tab Type ────────────────────────────────────────────────────────────────
 
-type Tab = "chat" | "itinerary" | "report";
+type Tab = "chat" | "itinerary" | "report" | "biz";
 
 // ─── Itinerary Form ─────────────────────────────────────────────────────────
 
@@ -398,13 +398,20 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
+          { id: "biz", label: "B端服务", icon: "⚙️" },
         ].map((tab) => (
           <button
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
             className={`tab-item ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.id as Tab)}
+            onClick={() => {
+              if (tab.id === "biz") {
+                router.push("/biz");
+              } else {
+                setActiveTab(tab.id as Tab);
+              }
+            }}
           >
             <span className="tab-icon">{tab.icon}</span>
             {tab.label}

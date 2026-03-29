@@ -8,31 +8,45 @@ import ChatInput from "@/components/ChatInput";
 import { streamChat, buildSystemPrompt } from "@/lib/minimax";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
+// 基于720条真实研学课程数据分析设计，贴合数据分布
+// 数据洞察：西安(48)>北京(30)>成都(15)；红色教育(155)/传统文化(153)/劳动实践(141)最热门；1天课程最多(164门)；费用集中在0-500元(106门)
 
 const QUICK_PROMPTS = [
   {
-    label: "推荐适合初一的研学课程",
+    label: "帮我搜西安的研学课程",
     icon: "🔍",
-    color: "purple",
-    prompt: "请推荐一些适合初一年级学生的研学课程，包括国内和出境选项，每个推荐请包含：课程名称、适合年级、主要内容、预期收获、参考价格区间。",
+    gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+    prompt: "请从研学知识库中搜索西安的研学课程，包括课程名称、适合年级、天数、费用、亮点介绍。",
   },
   {
-    label: "北京5天研学方案",
+    label: "帮我搜北京的研学方案",
+    icon: "🔍",
+    gradient: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+    prompt: "请从研学知识库中搜索北京的研学方案，整理成一份完整的行程建议，包含推荐路线、适合年级、预算参考。",
+  },
+  {
+    label: "帮我规划成都5天研学",
     icon: "🗺️",
-    color: "blue",
-    prompt: "请为一名初中生规划一份北京5天研学方案，包含每天的时间安排、活动地点、学习目标、费用预算和行前准备。",
+    gradient: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+    prompt: "请为初中生规划一份成都5天研学行程，包含每天景点安排、学习目标、费用预算和行前准备清单。",
   },
   {
     label: "生成我的研学报告",
     icon: "📝",
-    color: "green",
+    gradient: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
     prompt: "请帮我生成一份研学报告模板，包含：基本信息、研学概要、详细记录（按天）、收获与反思、评语区域。需要填写的内容请用占位符标注。",
+  },
+  {
+    label: "帮我搜红色教育研学路线",
+    icon: "🔴",
+    gradient: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+    prompt: "请从知识库中搜索红色教育类研学课程，按目的地整理，推荐适合中小学生的热门线路，列出课程名称、天数、费用和特色内容。",
   },
 ];
 
 // ─── Tab Type ────────────────────────────────────────────────────────────────
 
-type Tab = "chat" | "itinerary" | "report" | "courses";
+type Tab = "chat" | "itinerary" | "report";
 
 // ─── Itinerary Form ─────────────────────────────────────────────────────────
 
@@ -67,9 +81,9 @@ export default function HomePage() {
 
   // Itinerary state
   const [itineraryForm, setItineraryForm] = useState<ItineraryFormData>({
-    destination: "",
-    days: "5",
-    grade: "初一",
+    destination: "西安",
+    days: "1",
+    grade: "初中生",
     interest: "",
   });
   const [itineraryResult, setItineraryResult] = useState("");
@@ -389,14 +403,13 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
-          { id: "courses", label: "课程广场", icon: "🎪" },
         ].map((tab) => (
           <button
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
             className={`tab-item ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => tab.id === "courses" ? router.push("/courses") : setActiveTab(tab.id as Tab)}
+            onClick={() => setActiveTab(tab.id as Tab)}
           >
             <span className="tab-icon">{tab.icon}</span>
             {tab.label}
@@ -427,10 +440,12 @@ ${summary || "（用户未填写具体内容）"}
                       <button
                         key={qp.label}
                         className="quick-prompt-btn"
+                        style={{ background: qp.gradient }}
                         onClick={() => handleQuickPrompt(qp.prompt)}
                       >
                         <span
-                          className={`quick-prompt-icon ${qp.color}`}
+                          className="quick-prompt-icon"
+                          style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}
                           aria-hidden="true"
                         >
                           {qp.icon}
@@ -485,11 +500,9 @@ ${summary || "（用户未填写具体内容）"}
                   <label className="form-label" htmlFor="destination">
                     目的地 *
                   </label>
-                  <input
+                  <select
                     id="destination"
-                    type="text"
-                    className="form-input"
-                    placeholder="例如：北京、上海、西安、成都"
+                    className="form-select"
                     value={itineraryForm.destination}
                     onChange={(e) =>
                       setItineraryForm((f) => ({
@@ -497,7 +510,24 @@ ${summary || "（用户未填写具体内容）"}
                         destination: e.target.value,
                       }))
                     }
-                  />
+                  >
+                    {[
+                      { value: "西安", label: "📍 西安（最热门）" },
+                      { value: "北京", label: "📍 北京" },
+                      { value: "成都", label: "📍 成都" },
+                      { value: "上海", label: "📍 上海" },
+                      { value: "南京", label: "📍 南京" },
+                      { value: "重庆", label: "📍 重庆" },
+                      { value: "杭州", label: "📍 杭州" },
+                      { value: "青岛", label: "📍 青岛" },
+                      { value: "长沙", label: "📍 长沙" },
+                      { value: "其他城市", label: "📍 其他城市" },
+                    ].map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-row">
@@ -513,9 +543,19 @@ ${summary || "（用户未填写具体内容）"}
                         setItineraryForm((f) => ({ ...f, days: e.target.value }))
                       }
                     >
-                      {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                        <option key={d} value={d}>
-                          {d}天
+                      {[
+                        { value: "0.5", label: "半天" },
+                        { value: "1", label: "1天（最热门）" },
+                        { value: "2", label: "2天" },
+                        { value: "3", label: "3天" },
+                        { value: "4", label: "4天" },
+                        { value: "5", label: "5天" },
+                        { value: "6", label: "6天" },
+                        { value: "7", label: "7天" },
+                        { value: "10", label: "10天+"} ,
+                      ].map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
                         </option>
                       ))}
                     </select>
@@ -533,13 +573,24 @@ ${summary || "（用户未填写具体内容）"}
                         setItineraryForm((f) => ({ ...f, grade: e.target.value }))
                       }
                     >
-                      {["小学一年级", "小学二年级", "小学三年级", "小学四年级", "小学五年级", "小学六年级", "初一", "初二", "初三", "高一", "高二", "高三"].map(
-                        (g) => (
-                          <option key={g} value={g}>
-                            {g}
-                          </option>
-                        )
-                      )}
+                      {[
+                        { value: "小学低年级", label: "小学1-3年级" },
+                        { value: "小学高年级", label: "小学4-6年级" },
+                        { value: "初一", label: "初一" },
+                        { value: "初二", label: "初二" },
+                        { value: "初三", label: "初三" },
+                        { value: "高一", label: "高一" },
+                        { value: "高二", label: "高二" },
+                        { value: "高三", label: "高三" },
+                        { value: "初中生", label: "初中生（通用）" },
+                        { value: "高中生", label: "高中生（通用）" },
+                        { value: "亲子", label: "亲子（家长同行）" },
+                        { value: "成人", label: "成人/大学生" },
+                      ].map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -548,11 +599,9 @@ ${summary || "（用户未填写具体内容）"}
                   <label className="form-label" htmlFor="interest">
                     兴趣方向（选填）
                   </label>
-                  <input
+                  <select
                     id="interest"
-                    type="text"
-                    className="form-input"
-                    placeholder="例如：历史文化、自然科技、艺术创意"
+                    className="form-select"
                     value={itineraryForm.interest}
                     onChange={(e) =>
                       setItineraryForm((f) => ({
@@ -560,7 +609,16 @@ ${summary || "（用户未填写具体内容）"}
                         interest: e.target.value,
                       }))
                     }
-                  />
+                  >
+                    <option value="">不限方向</option>
+                    <option value="红色教育">🔴 红色教育（最热门，155门课）</option>
+                    <option value="传统文化">🏛️ 传统文化（153门课）</option>
+                    <option value="劳动实践">🌱 劳动实践（141门课）</option>
+                    <option value="自然生态">🌿 自然生态（99门课）</option>
+                    <option value="国防科工">🚀 国防科工（79门课）</option>
+                    <option value="国情教育">🇨🇳 国情教育（56门课）</option>
+                    <option value="其他">⚪ 其他</option>
+                  </select>
                 </div>
 
                 <button
@@ -586,7 +644,7 @@ ${summary || "（用户未填写具体内容）"}
                     className="back-btn"
                     onClick={() => {
                       setItineraryResult("");
-                      setItineraryForm({ destination: "", days: "5", grade: "初一", interest: "" });
+                      setItineraryForm({ destination: "西安", days: "1", grade: "初中生", interest: "" });
                     }}
                   >
                     ← 重新规划

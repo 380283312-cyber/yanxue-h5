@@ -32,7 +32,7 @@ const QUICK_PROMPTS = [
 
 // ─── Tab Type ────────────────────────────────────────────────────────────────
 
-type Tab = "chat" | "itinerary" | "report";
+type Tab = "chat" | "itinerary" | "report" | "courses";
 
 // ─── Itinerary Form ─────────────────────────────────────────────────────────
 
@@ -389,14 +389,14 @@ ${summary || "（用户未填写具体内容）"}
           { id: "chat", label: "对话", icon: "💬" },
           { id: "itinerary", label: "行程规划", icon: "🗺️" },
           { id: "report", label: "报告生成", icon: "📝" },
-          { id: "biz", label: "B端服务", icon: "🏢" },
+          { id: "courses", label: "课程广场", icon: "🎪" },
         ].map((tab) => (
           <button
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
             className={`tab-item ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => tab.id === "biz" ? router.push("/biz") : setActiveTab(tab.id as Tab)}
+            onClick={() => tab.id === "courses" ? router.push("/courses") : setActiveTab(tab.id as Tab)}
           >
             <span className="tab-icon">{tab.icon}</span>
             {tab.label}

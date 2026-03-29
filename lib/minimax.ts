@@ -1,3 +1,5 @@
+import { courses } from "@/data/courses";
+
 export interface Message {
   role: "user" | "assistant";
   content: string;
@@ -135,6 +137,49 @@ export function buildSystemPrompt(): string {
 - 收获与反思
 - 家长/老师评语（模板）
 - 精彩瞬间（预留照片位）
+
+## 研学课程知识库
+【研学课程知识库】以下是研学平台的真实课程数据（共${courses.length}门），生成方案时请优先从知识库中匹配相似课程作为参考模板：
+
+${(() => {
+  const categories: Record<string, string[]> = {};
+  for (const c of courses) {
+    const cat = c.classify;
+    if (!categories[cat]) categories[cat] = [];
+    const fee = c.fee && c.fee !== "待定" ? c.fee : "费用待定";
+    const crowd = c.crowd || "通用";
+    categories[cat].push(`${c.name}（${cat}，${fee}，${crowd}）`);
+  }
+  const categoryLabels: Record<string, string> = {
+    "红色教育": "🔴 红色教育",
+    "传统文化": "🟡 传统文化",
+    "劳动实践": "🟢 劳动实践",
+    "自然生态": "🌿 自然生态",
+    "国防科工": "🔵 国防科工",
+    "国情教育": "🔷 国情教育",
+    "其他": "⚪ 其他",
+  };
+  const catEmoji: Record<string, string> = {
+    "红色教育": "🔴",
+    "传统文化": "🟡",
+    "劳动实践": "🟢",
+    "自然生态": "🌿",
+    "国防科工": "🔵",
+    "国情教育": "🔷",
+    "其他": "⚪",
+  };
+  const lines: string[] = [];
+  for (const [cat, catCourses] of Object.entries(categories)) {
+    lines.push(`\n【${catEmoji[cat] || "⚪"} ${cat}】共${catCourses.length}门课程：`);
+    // List all courses in this category, compact format
+    for (const courseStr of catCourses) {
+      lines.push(`  · ${courseStr}`);
+    }
+  }
+  return lines.join("\n");
+})()}
+
+请从以上真实课程库中匹配最相似的已有课程作为模板，结合用户需求生成定制化方案。
 
 开始你的顾问工作吧！`;
 }

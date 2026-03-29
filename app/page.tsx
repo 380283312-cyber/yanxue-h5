@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
@@ -13,34 +13,29 @@ import { streamChat, buildSystemPrompt } from "@/lib/minimax";
 
 const QUICK_PROMPTS = [
   {
-    label: "帮我搜西安的研学课程",
+    label: "帮我搜西安的研学课程（搜索目的地、路线）",
     icon: "🔍",
-    gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+    accent: "#3b82f6",
     prompt: "请从研学知识库中搜索西安的研学课程，包括课程名称、适合年级、天数、费用、亮点介绍。",
   },
   {
-    label: "帮我搜北京的研学方案",
-    icon: "🔍",
-    gradient: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-    prompt: "请从研学知识库中搜索北京的研学方案，整理成一份完整的行程建议，包含推荐路线、适合年级、预算参考。",
-  },
-  {
-    label: "帮我规划成都5天研学",
+    label: "帮我规划成都5天研学（生成完整行程方案）",
     icon: "🗺️",
-    gradient: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+    accent: "#f59e0b",
     prompt: "请为初中生规划一份成都5天研学行程，包含每天景点安排、学习目标、费用预算和行前准备清单。",
   },
   {
-    label: "生成我的研学报告",
+    label: "生成我的研学报告（模板 + AI 辅助撰写）",
     icon: "📝",
-    gradient: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+    accent: "#8b5cf6",
     prompt: "请帮我生成一份研学报告模板，包含：基本信息、研学概要、详细记录（按天）、收获与反思、评语区域。需要填写的内容请用占位符标注。",
   },
   {
-    label: "帮我搜红色教育研学路线",
-    icon: "🔴",
-    gradient: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
-    prompt: "请从知识库中搜索红色教育类研学课程，按目的地整理，推荐适合中小学生的热门线路，列出课程名称、天数、费用和特色内容。",
+    label: "帮我配置研学方案（面向学校/基地）",
+    icon: "⚙️",
+    accent: "#01c3a3",
+    prompt: "我需要为学校（或研学基地）配置一套研学课程方案。请根据我的需求推荐合适的研学主题、目标客群（年级段）、课程时长、费用区间、特色亮点，以及配套的行程建议和营销卖点。",
+    isBiz: true,
   },
 ];
 
@@ -439,18 +434,14 @@ ${summary || "（用户未填写具体内容）"}
                     {QUICK_PROMPTS.map((qp) => (
                       <button
                         key={qp.label}
-                        className="quick-prompt-btn"
-                        style={{ background: qp.gradient }}
+                        className={`quick-prompt-btn${qp.isBiz ? " quick-prompt-btn--biz" : ""}`}
+                        style={{ "--accent": qp.accent } as React.CSSProperties}
                         onClick={() => handleQuickPrompt(qp.prompt)}
                       >
-                        <span
-                          className="quick-prompt-icon"
-                          style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}
-                          aria-hidden="true"
-                        >
+                        <span className="quick-prompt-icon" aria-hidden="true">
                           {qp.icon}
                         </span>
-                        {qp.label}
+                        <span className="quick-prompt-label">{qp.label}</span>
                       </button>
                     ))}
                   </div>

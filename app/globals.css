@@ -373,7 +373,7 @@ a {
   border: 1px solid var(--gray-100);
   background: var(--white);
   border-left: 3px solid var(--accent, var(--primary));
-  font-size: 12px;
+  font-size: 13px;
   color: var(--gray-600);
   padding: 9px 12px;
   box-shadow: none;

@@ -14,13 +14,6 @@ export default function Header() {
           <span className="header-title">研学AI助手</span>
         </div>
         <div className="header-actions">
-          <a href="/biz" className="share-btn biz-link">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-            </svg>
-            B端服务
-          </a>
           <button
             className="share-btn"
             onClick={() => setShowShare(true)}

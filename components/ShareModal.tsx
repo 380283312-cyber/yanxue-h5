@@ -18,13 +18,15 @@ interface ShareModalProps {
     theme: string;
     date: string;
   };
+  /** 报告正文摘要，传给纪念卡图片化展示 */
+  reportSummary?: string;
 }
 
 const SHARE_URL = "https://www.woaiyanxue.cn";
 const SHARE_TITLE = "🎓 帮学校生成研学方案 · 帮家长生成研学报告";
 const SHARE_DESC = "输入目的地和天数，AI 5秒生成完整研学行程、家长信、研学报告，完全免费";
 
-export default function ShareModal({ visible, onClose, posterType = "general", bgType = "palace", onBgTypeChange, reportData }: ShareModalProps) {
+export default function ShareModal({ visible, onClose, posterType = "general", bgType = "palace", onBgTypeChange, reportData, reportSummary }: ShareModalProps) {
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [posterKey, setPosterKey] = useState(0);
@@ -225,6 +227,7 @@ export default function ShareModal({ visible, onClose, posterType = "general", b
           theme={reportData.theme}
           date={reportData.date}
           bgType={bgType}
+          reportSummary={reportSummary}
         />
       ) : posterKey > 0 ? (
         <PosterCanvas key={posterKey} url={SHARE_URL} />

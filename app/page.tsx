@@ -406,6 +406,7 @@ ${summary || "（用户未填写具体内容）"}
           theme: reportForm.theme,
           date: reportForm.date,
         }}
+        reportSummary={reportResult}
       />
 
       {/* Tab Navigation */}
@@ -888,9 +889,9 @@ ${summary || "（用户未填写具体内容）"}
                     <div className="template-tags">
                       <button
                         className="template-tag"
-                        onClick={() => setPosterType("report")}
+                        onClick={() => { setPosterType("report"); openShare(); }}
                       >
-                        🏛️ 生成报告
+                        🏛️ 生成纪念卡
                       </button>
                       <button
                         className="template-tag tag-share"

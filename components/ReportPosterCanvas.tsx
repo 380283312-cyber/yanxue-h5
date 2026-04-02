@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
 
 interface ReportPosterCanvasProps {
@@ -12,6 +12,7 @@ interface ReportPosterCanvasProps {
   theme: string;
   date: string;
   bgType?: "palace" | "mountain";
+  reportSummary?: string;
 }
 
 export default function ReportPosterCanvas({
@@ -23,17 +24,9 @@ export default function ReportPosterCanvas({
   theme,
   date,
   bgType = "palace",
+  reportSummary,
 }: ReportPosterCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [bgImg, setBgImg] = useState<HTMLImageElement | null>(null);
-
-  // Load background image
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = bgType === "palace" ? "/bg-palace.jpg" : "/bg-yellow-mountain.jpg";
-    img.onload = () => setBgImg(img);
-  }, [bgType]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,268 +34,305 @@ export default function ReportPosterCanvas({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // ─── Layout constants ───────────────────────────────────────────────
     const W = 600;
-    const H = 900;
-    canvas.width = W;
-    canvas.height = H;
+    const PADDING = 40;
+    const QR_SIZE = 110;
+    const CARD_R = 12;
+    const LINE_H = 22;
 
-    // ─── Color palette ───────────────────────────────────────────────
+    // Colors
     const GOLD = "#C9A84C";
     const DEEP_BLUE = "#1a2a4a";
     const DARK_BROWN = "#3d2b1f";
-    const SOFT_TEAL = "#4A9E8E";
+    const SOFT_TEAL = "#4A9E8B";
+    const LIGHT_BG = "#faf8f4";
 
-    // ─── Background ────────────────────────────────────────────────
-    if (bgImg) {
-      // Draw background image with cover mode (center crop)
-      const imgAspect = bgImg.width / bgImg.height;
-      const canvasAspect = W / H;
-      let drawW, drawH, drawX, drawY;
-      if (imgAspect > canvasAspect) {
-        drawH = H;
-        drawW = H * imgAspect;
-        drawX = (W - drawW) / 2;
-        drawY = 0;
-      } else {
-        drawW = W;
-        drawH = W / imgAspect;
-        drawX = 0;
-        drawY = (H - drawH) / 2;
-      }
-      ctx.drawImage(bgImg, drawX, drawY, drawW, drawH);
+    // ─── Pre-compute layout ────────────────────────────────────────────
+    // If reportSummary is provided, we need more vertical space
+    const REPORT_CARD_H = 280;
+    const QR_CARD_H = 210;
+    const BOTTOM_BAND_H = 50;
 
-      // Dark gradient overlay — top band area darker for title readability
-      const topGrad = ctx.createLinearGradient(0, 0, 0, 280);
-      topGrad.addColorStop(0, "rgba(10,15,30,0.75)");
-      topGrad.addColorStop(1, "rgba(10,15,30,0.2)");
-      ctx.fillStyle = topGrad;
-      ctx.fillRect(0, 0, W, 280);
+    const TOP_AREA_H = 430; // header + student info + base/theme
+    const REPORT_AREA_H = reportSummary ? REPORT_CARD_H + 20 : 0;
+    const BOTTOM_AREA_H = QR_CARD_H + BOTTOM_BAND_H + 20;
 
-      // Bottom overlay for bottom card readability
-      const bottomGrad = ctx.createLinearGradient(0, H - 300, 0, H);
-      bottomGrad.addColorStop(0, "rgba(10,15,30,0)");
-      bottomGrad.addColorStop(1, "rgba(10,15,30,0.6)");
-      ctx.fillStyle = bottomGrad;
-      ctx.fillRect(0, H - 300, W, 300);
+    const totalH = TOP_AREA_H + REPORT_AREA_H + BOTTOM_AREA_H;
 
-      // Subtle center vignette
-      const centerGrad = ctx.createRadialGradient(W/2, H/2, 80, W/2, H/2, 500);
-      centerGrad.addColorStop(0, "rgba(10,15,30,0.1)");
-      centerGrad.addColorStop(1, "rgba(10,15,30,0)");
-      ctx.fillStyle = centerGrad;
-      ctx.fillRect(0, 0, W, H);
-    } else {
-      // Fallback gradient background
-      ctx.fillStyle = "#1a2a4a";
-      ctx.fillRect(0, 0, W, H);
+    // ─── Set canvas size FIRST ──────────────────────────────────────────
+    canvas.width = W;
+    canvas.height = totalH;
+
+    // ─── Background: warm gradient ─────────────────────────────────────
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, totalH);
+    bgGrad.addColorStop(0, "#faf6ee");
+    bgGrad.addColorStop(0.4, "#f5f0e8");
+    bgGrad.addColorStop(1, "#ede8df");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, totalH);
+
+    // Subtle paper texture dots
+    ctx.fillStyle = "rgba(160,140,100,0.06)";
+    for (let i = 0; i < 80; i++) {
+      const dx = (i * 137) % W;
+      const dy = (i * 79) % totalH;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 1.2, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    // Gold accent line
+    // Top band
+    ctx.fillStyle = DEEP_BLUE;
+    ctx.fillRect(0, 0, W, 8);
     ctx.fillStyle = GOLD;
-    ctx.fillRect(0, 220, W, 3);
+    ctx.fillRect(0, 8, W, 2);
 
-    // ─── Top band content ───────────────────────────────────────────
+    // ─── Helper: draw rounded rect ──────────────────────────────────────
+    function roundRect(x: number, y: number, w: number, h: number, r: number) {
+      const c = ctx!;
+      c.beginPath();
+      c.moveTo(x + r, y);
+      c.lineTo(x + w - r, y);
+      c.quadraticCurveTo(x + w, y, x + w, y + r);
+      c.lineTo(x + w, y + h - r);
+      c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      c.lineTo(x + r, y + h);
+      c.quadraticCurveTo(x, y + h, x, y + h - r);
+      c.lineTo(x, y + r);
+      c.quadraticCurveTo(x, y, x + r, y);
+      c.closePath();
+    }
+
+    // ─── Top band: title ────────────────────────────────────────────────
     ctx.textAlign = "center";
-
-    // "研学结业纪念" label
     ctx.fillStyle = GOLD;
     ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.letterSpacing = "6px";
-    ctx.fillText("· 研学结业纪念 ·", W / 2, 52);
+    ctx.fillText("· 研学结业纪念 ·", W / 2, 46);
 
-    // Decorative line
-    ctx.strokeStyle = "rgba(201,168,76,0.5)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(W/2 - 100, 62);
-    ctx.lineTo(W/2 + 100, 62);
-    ctx.stroke();
-
-    // Main title
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 48px -apple-system, BlinkMacSystemFont, 'PingFang SC', 'STKaiti', serif";
-    ctx.fillText("探索之旅", W / 2, 118);
-
-    // Subtitle
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.font = "22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.fillText("研学成长记录", W / 2, 155);
-
-    // Date in band
-    if (date) {
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-      ctx.fillText(date, W / 2, 192);
-    }
-
-    // ─── Student info section ──────────────────────────────────────
-    const infoY = 280 + 40;
-
-    // Student name - large elegant
-    ctx.fillStyle = DARK_BROWN;
-    ctx.font = "bold 44px -apple-system, BlinkMacSystemFont, 'STKaiti', 'KaiTi', serif";
-    ctx.textAlign = "center";
-    ctx.fillText(studentName || "同学", W / 2, infoY + 50);
-
-    // Decorative dot separator
-    ctx.fillStyle = GOLD;
-    ctx.beginPath();
-    ctx.arc(W/2, infoY + 68, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // School & grade
-    ctx.fillStyle = "#6b5a4a";
-    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    const schoolText = [school, grade].filter(Boolean).join(" · ");
-    ctx.fillText(schoolText || "—", W / 2, infoY + 100);
-
-    // ─── Divider ───────────────────────────────────────────────────
     ctx.strokeStyle = "rgba(201,168,76,0.4)";
     ctx.lineWidth = 1;
-    ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(80, infoY + 130);
-    ctx.lineTo(W - 80, infoY + 130);
+    ctx.moveTo(W / 2 - 90, 56);
+    ctx.lineTo(W / 2 + 90, 56);
+    ctx.stroke();
+
+    ctx.fillStyle = DEEP_BLUE;
+    ctx.font = "bold 46px -apple-system, BlinkMacSystemFont, 'STKaiti', 'KaiTi', serif";
+    ctx.fillText("探索之旅", W / 2, 112);
+
+    ctx.fillStyle = "#8a7a6a";
+    ctx.font = "20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText("研学成长记录", W / 2, 148);
+
+    if (date) {
+      ctx.fillStyle = "#bbb";
+      ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+      ctx.fillText(date, W / 2, 180);
+    }
+
+    // ─── Student info ───────────────────────────────────────────────────
+    const infoY = 210;
+    ctx.textAlign = "center";
+
+    ctx.fillStyle = DARK_BROWN;
+    ctx.font = "bold 40px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
+    ctx.fillText(studentName || "同学", W / 2, infoY + 40);
+
+    // Gold dot separator
+    ctx.fillStyle = GOLD;
+    ctx.beginPath();
+    ctx.arc(W / 2, infoY + 56, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#6b5a4a";
+    ctx.font = "16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    const schoolText = [school, grade].filter(Boolean).join(" · ");
+    ctx.fillText(schoolText || "—", W / 2, infoY + 84);
+
+    // Gold dashed line
+    ctx.strokeStyle = "rgba(201,168,76,0.3)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(70, infoY + 108);
+    ctx.lineTo(W - 70, infoY + 108);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ─── Base / Theme section ──────────────────────────────────────
-    const baseY = infoY + 165;
+    // ─── Base & Theme ──────────────────────────────────────────────────
+    const baseY = infoY + 120;
+    ctx.textAlign = "center";
 
-    // Base label
     ctx.fillStyle = GOLD;
-    ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
     ctx.fillText("研学基地", W / 2, baseY);
 
-    // Base name
     ctx.fillStyle = DEEP_BLUE;
-    ctx.font = "bold 30px -apple-system, BlinkMacSystemFont, 'STKaiti', 'KaiTi', serif";
-    ctx.fillText(base || "—", W / 2, baseY + 38);
+    ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
+    ctx.fillText(base || "—", W / 2, baseY + 32);
 
-    // Theme label
-    ctx.fillStyle = "rgba(61,43,31,0.6)";
-    ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.fillText("研学主题", W / 2, baseY + 72);
+    ctx.fillStyle = "rgba(61,43,31,0.5)";
+    ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText("研学主题", W / 2, baseY + 60);
 
-    // Theme text
     ctx.fillStyle = DARK_BROWN;
-    ctx.font = "20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    const themeDisplay = theme.length > 20 ? theme.substring(0, 20) + "…" : theme;
-    ctx.fillText(themeDisplay || "—", W / 2, baseY + 100);
+    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    const themeDisplay = theme.length > 35 ? theme.substring(0, 35) + "…" : (theme || "—");
+    ctx.fillText(themeDisplay, W / 2, baseY + 84);
 
-    // ─── Bottom card with QR ────────────────────────────────────────
-    const cardX = 60;
-    const cardW = W - 120;
-    const cardY = baseY + 135;
-    const cardH = 230;
+    // ─── Report summary card ────────────────────────────────────────────
+    let contentY = baseY + 100;
 
-    // Card shadow (pseudo)
+    if (reportSummary) {
+      const cardX = 30;
+      const cardW = W - 60;
+      const cardH = REPORT_CARD_H;
+
+      // Shadow
+      ctx.fillStyle = "rgba(0,0,0,0.06)";
+      roundRect(cardX + 3, contentY + 3, cardW, cardH, CARD_R);
+      ctx.fill();
+
+      // Card background
+      ctx.fillStyle = LIGHT_BG;
+      roundRect(cardX, contentY, cardW, cardH, CARD_R);
+      ctx.fill();
+
+      // Gold top border
+      ctx.fillStyle = GOLD;
+      roundRect(cardX, contentY, cardW, 3, CARD_R);
+      ctx.fill();
+
+      // Section label
+      ctx.textAlign = "left";
+      ctx.fillStyle = GOLD;
+      ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+      ctx.fillText("研学记录摘要", cardX + 16, contentY + 22);
+
+      // Separator
+      ctx.strokeStyle = "rgba(201,168,76,0.25)";
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(cardX + 16, contentY + 30);
+      ctx.lineTo(cardX + cardW - 16, contentY + 30);
+      ctx.stroke();
+
+      // Report text
+      ctx.fillStyle = "#4a3a2a";
+      ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+      const textMaxW = cardW - 32;
+      const truncatedSummary = reportSummary.length > 350
+        ? reportSummary.substring(0, 350) + "…"
+        : reportSummary;
+
+      // Word-wrap
+      const chars = Math.floor(textMaxW / 13);
+      const paragraphs = truncatedSummary.split("\n");
+      let cy = contentY + 48;
+      for (const para of paragraphs) {
+        if (para.trim() === "") { cy += 6; continue; }
+        const words = para.split(/([\s\u200b]+)/);
+        let row = "";
+        for (const w of words) {
+          if ((row + w).length > chars) {
+            ctx.fillText(row.trim(), cardX + 16, cy);
+            cy += LINE_H;
+            row = w;
+          } else {
+            row += w;
+          }
+        }
+        if (row.trim()) { ctx.fillText(row.trim(), cardX + 16, cy); cy += LINE_H; }
+      }
+
+      contentY += cardH + 20;
+    }
+
+    // ─── QR card ───────────────────────────────────────────────────────
+    const qrCardX = 50;
+    const qrCardW = W - 100;
+    const qrCardY = contentY;
+    const qrCardH = QR_CARD_H;
+
+    // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.06)";
-    roundRect(ctx, cardX + 4, cardY + 4, cardW, cardH, 16);
+    roundRect(qrCardX + 3, qrCardY + 3, qrCardW, qrCardH, 14);
     ctx.fill();
 
-    // Card background
+    // Card
     ctx.fillStyle = "#ffffff";
-    roundRect(ctx, cardX, cardY, cardW, cardH, 16);
+    roundRect(qrCardX, qrCardY, qrCardW, qrCardH, 14);
     ctx.fill();
 
-    // Gold top border on card
+    // Gold top
     ctx.fillStyle = GOLD;
-    roundRect(ctx, cardX, cardY, cardW, 4, 16);
+    roundRect(qrCardX, qrCardY, qrCardW, 4, 14);
     ctx.fill();
-    ctx.fillStyle = "rgba(201,168,76,0.3)";
-    ctx.fillRect(cardX, cardY + 4, cardW, 1);
 
-    // QR area
-    const qrSize = 130;
-    const qrX = cardX + (cardW - qrSize) / 2;
-    const qrY = cardY + 22;
+    const qrX = qrCardX + (qrCardW - QR_SIZE) / 2;
+    const qrY = qrCardY + 18;
 
+    // QR code drawn after async load
     QRCode.toDataURL(url, {
-      width: qrSize,
+      width: QR_SIZE,
       margin: 2,
       color: { dark: DEEP_BLUE, light: "#ffffff" },
     }).then((dataUrl) => {
       const img = new Image();
       img.onload = () => {
-        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+        ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
 
         // QR corner decorations
         ctx.strokeStyle = SOFT_TEAL;
         ctx.lineWidth = 2.5;
         ctx.lineCap = "round";
-        const cs = 10;
+        const cs = 9;
         // TL
-        ctx.beginPath();
-        ctx.moveTo(qrX, qrY + cs);
-        ctx.lineTo(qrX, qrY);
-        ctx.lineTo(qrX + cs, qrY);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qrX, qrY + cs); ctx.lineTo(qrX, qrY); ctx.lineTo(qrX + cs, qrY); ctx.stroke();
         // TR
-        ctx.beginPath();
-        ctx.moveTo(qrX + qrSize - cs, qrY);
-        ctx.lineTo(qrX + qrSize, qrY);
-        ctx.lineTo(qrX + qrSize, qrY + cs);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qrX + QR_SIZE - cs, qrY); ctx.lineTo(qrX + QR_SIZE, qrY); ctx.lineTo(qrX + QR_SIZE, qrY + cs); ctx.stroke();
         // BL
-        ctx.beginPath();
-        ctx.moveTo(qrX, qrY + qrSize - cs);
-        ctx.lineTo(qrX, qrY + qrSize);
-        ctx.lineTo(qrX + cs, qrY + qrSize);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qrX, qrY + QR_SIZE - cs); ctx.lineTo(qrX, qrY + QR_SIZE); ctx.lineTo(qrX + cs, qrY + QR_SIZE); ctx.stroke();
         // BR
-        ctx.beginPath();
-        ctx.moveTo(qrX + qrSize - cs, qrY + qrSize);
-        ctx.lineTo(qrX + qrSize, qrY + qrSize);
-        ctx.lineTo(qrX + qrSize, qrY + qrSize - cs);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qrX + QR_SIZE - cs, qrY + QR_SIZE); ctx.lineTo(qrX + QR_SIZE, qrY + QR_SIZE); ctx.lineTo(qrX + QR_SIZE, qrY + QR_SIZE - cs); ctx.stroke();
 
-        // Scan instruction
+        // Text below QR
         ctx.fillStyle = DARK_BROWN;
-        ctx.font = "bold 17px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("长按识别二维码", W / 2, qrY + qrSize + 26);
-
-        // CTA text
-        ctx.fillStyle = SOFT_TEAL;
-        ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.fillText("免费生成你的研学报告", W / 2, qrY + qrSize + 50);
-
-        // Bottom URL
-        ctx.fillStyle = "#1a2a4a";
         ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.fillText("🎓 www.woaiyanxue.cn", W / 2, qrY + qrSize + 72);
+        ctx.textAlign = "center";
+        ctx.fillText("长按识别二维码", W / 2, qrY + QR_SIZE + 22);
 
-        // Bottom band
-        const bottomY = cardY + cardH + 20;
-        const bottomBandH = 44;
+        ctx.fillStyle = SOFT_TEAL;
+        ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("免费生成你的研学报告", W / 2, qrY + QR_SIZE + 40);
+
         ctx.fillStyle = DEEP_BLUE;
-        roundRect(ctx, 40, bottomY, W - 80, bottomBandH, 12);
+        ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("www.woaiyanxue.cn", W / 2, qrY + QR_SIZE + 58);
+
+        // ─── Bottom slogan band ─────────────────────────────────────────
+        const bottomY = qrCardY + qrCardH + 16;
+        ctx.fillStyle = DEEP_BLUE;
+        roundRect(35, bottomY, W - 70, BOTTOM_BAND_H - 6, 10);
         ctx.fill();
 
         ctx.fillStyle = GOLD;
-        ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("让每一次探索，都留下成长印记", W / 2, bottomY + 28);
+        ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("让每一次探索，都留下成长印记", W / 2, bottomY + (BOTTOM_BAND_H - 6) / 2 + 5);
 
-        // Bottom decorative line
-        ctx.fillStyle = "rgba(201,168,76,0.3)";
-        ctx.fillRect(0, H - 4, W, 4);
+        // Bottom gold line
+        ctx.fillStyle = GOLD;
+        ctx.fillRect(0, totalH - 3, W, 3);
 
+        // ─── Trigger download ───────────────────────────────────────────
         triggerDownload(canvas);
       };
       img.src = dataUrl;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [url, studentName, school, grade, base, theme, date, bgType, reportSummary]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ display: "none" }}
-      aria-hidden="true"
-    />
-  );
+  return <canvas ref={canvasRef} style={{ display: "none" }} aria-hidden="true" />;
 }
 
 function triggerDownload(canvas: HTMLCanvasElement) {
@@ -312,60 +342,4 @@ function triggerDownload(canvas: HTMLCanvasElement) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-}
-
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function drawCornerOrnament(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  w: number,
-  h: number,
-  color: string,
-  corner: "TL" | "TR" | "BL" | "BR"
-) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.lineCap = "round";
-  ctx.globalAlpha = 0.6;
-
-  const x1 = corner === "TL" || corner === "BL" ? cx - w : cx;
-  const x2 = corner === "TL" || corner === "BL" ? cx : cx + w;
-  const y1 = corner === "TL" || corner === "TR" ? cy - h : cy;
-  const y2 = corner === "TL" || corner === "TR" ? cy : cy + h;
-
-  // L-shape corner
-  ctx.beginPath();
-  ctx.moveTo(x1, y1 + h * 0.4);
-  ctx.lineTo(x1, y1);
-  ctx.lineTo(x1 + w * 0.4, y1);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(x2 - w * 0.4, y2);
-  ctx.lineTo(x2, y2);
-  ctx.lineTo(x2, y2 + h * 0.4);
-  ctx.stroke();
-
-  ctx.globalAlpha = 1;
 }

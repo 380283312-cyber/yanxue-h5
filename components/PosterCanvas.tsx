@@ -30,6 +30,13 @@ export default function PosterCanvas({ url }: PosterCanvasProps) {
     ctx.fillStyle = "#01C3A3";
     ctx.fillRect(0, 0, W, 6);
 
+    // ── Warm top gradient overlay ─────────────────────────────────
+    const warmGrad = ctx.createLinearGradient(0, 0, W, 300);
+    warmGrad.addColorStop(0, "rgba(254, 215, 170, 0.12)");
+    warmGrad.addColorStop(1, "rgba(1, 195, 163, 0)");
+    ctx.fillStyle = warmGrad;
+    ctx.fillRect(0, 0, W, 300);
+
     // ── Decorative circle (top right, subtle) ─────────────────────
     const radial = ctx.createRadialGradient(W - 80, 120, 10, W - 80, 120, 200);
     radial.addColorStop(0, "rgba(1,195,163,0.15)");
@@ -98,23 +105,28 @@ export default function PosterCanvas({ url }: PosterCanvasProps) {
     ctx.stroke();
 
     // ── Feature tags ──────────────────────────────────────────────
-    const tags = ["行程规划", "报告生成", "专业咨询"];
-    const tagX = 40;
+    const tags = ["✈️ 研学行程", "📄 报告生成", "🏫 学校方案"];
+    const tagX = 30;
     const tagY = 255;
-    const tagGap = 140;
+    const tagGap = 155;
 
     ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
     ctx.textAlign = "center";
     tags.forEach((tag, i) => {
       const tx = tagX + i * tagGap;
       // Tag pill background
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      roundRectPath(ctx, tx, tagY, 120, 36, 18);
+      ctx.fillStyle = "rgba(1,195,163,0.12)";
+      roundRectPath(ctx, tx, tagY, 135, 36, 18);
       ctx.fill();
+      // Tag border
+      ctx.strokeStyle = "rgba(1,195,163,0.35)";
+      ctx.lineWidth = 1;
+      roundRectPath(ctx, tx, tagY, 135, 36, 18);
+      ctx.stroke();
       // Tag text
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
       ctx.textBaseline = "middle";
-      ctx.fillText(tag, tx + 60, tagY + 18);
+      ctx.fillText(tag, tx + 68, tagY + 18);
     });
 
     // ── QR code card ───────────────────────────────────────────────
@@ -180,9 +192,9 @@ export default function PosterCanvas({ url }: PosterCanvasProps) {
         ctx.textBaseline = "alphabetic";
         ctx.fillText("长按识别二维码", W / 2, qrY + qrSize + 38);
 
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.fillText("立即体验 AI 研学之旅", W / 2, qrY + qrSize + 62);
+        ctx.fillStyle = "#01C3A3";
+        ctx.font = "bold 17px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("免费生成研学方案 · 5秒出结果", W / 2, qrY + qrSize + 62);
 
         // ── Bottom URL bar ──────────────────────────────────────────
         ctx.fillStyle = "#1e293b";
@@ -190,10 +202,10 @@ export default function PosterCanvas({ url }: PosterCanvasProps) {
         ctx.fill();
 
         ctx.fillStyle = "#01C3A3";
-        ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.font = "bold 17px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("www.woaiyanxue.cn", W / 2, cardY + cardH + 46);
+        ctx.fillText("🎓 www.woaiyanxue.cn  研学AI助手", W / 2, cardY + cardH + 46);
 
         // ── Trigger download ─────────────────────────────────────────
         triggerDownload(canvas);

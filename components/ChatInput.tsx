@@ -65,7 +65,11 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
         aria-label="发送消息"
       >
         {disabled ? (
-          <div className="spinner" />
+          <div className="typing-indicator">
+            <span className="typing-dot"></span>
+            <span className="typing-dot"></span>
+            <span className="typing-dot"></span>
+          </div>
         ) : (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>

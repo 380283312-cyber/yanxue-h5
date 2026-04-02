@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { streamChat, buildSystemPrompt } from "@/lib/minimax";
+import { streamChatViaAPI, buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 
 type BizType = "org" | "school";
 
@@ -103,26 +103,23 @@ export default function BizPage() {
     let fullResponse = "";
 
     try {
-      await streamChat({
+      await streamChatViaAPI({
         messages: [
           { role: "user" as const, content: buildSystemPrompt() },
           { role: "user" as const, content: prompt },
         ],
-        apiKey:
-          process.env.NEXT_PUBLIC_MINIMAX_API_KEY ??
-          "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E",
-        onChunk: (text) => {
+        onChunk: (text: string) => {
           fullResponse += text;
           setResult(fullResponse);
         },
         onDone: () => setLoading(false),
-        onError: (err) => {
-          setResult(`生成失败：${err.message}`);
+        onError: (err: Error) => {
+          setResult(FRIENDLY_ERROR_MESSAGE);
           setLoading(false);
         },
       });
     } catch (err) {
-      setResult(`生成失败：${err instanceof Error ? err.message : "未知错误"}`);
+      setResult(FRIENDLY_ERROR_MESSAGE);
       setLoading(false);
     }
   };

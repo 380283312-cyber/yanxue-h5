@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import ChatBubble, { ChatMessage } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
-import { streamChat, buildSystemPrompt } from "@/lib/minimax";
+import ShareModal from "@/components/ShareModal";
+import PosterCanvas from "@/components/PosterCanvas";
+import ReportPosterCanvas from "@/components/ReportPosterCanvas";
+import { streamChatViaAPI, buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
 // 基于720条真实研学课程数据分析设计，贴合数据分布
@@ -50,6 +53,7 @@ interface ItineraryFormData {
   days: string;
   grade: string;
   interest: string;
+  intentionBase: string;
 }
 
 // ─── Report Form ────────────────────────────────────────────────────────────
@@ -62,6 +66,7 @@ interface ReportFormData {
   date: string;
   location: string;
   summary: string;
+  base: string;
 }
 
 // ─── Main Page Component ─────────────────────────────────────────────────────
@@ -80,6 +85,7 @@ export default function HomePage() {
     days: "1",
     grade: "初中生",
     interest: "",
+    intentionBase: "",
   });
   const [itineraryResult, setItineraryResult] = useState("");
   const [itineraryLoading, setItineraryLoading] = useState(false);
@@ -93,9 +99,17 @@ export default function HomePage() {
     date: "",
     location: "",
     summary: "",
+    base: "",
   });
   const [reportResult, setReportResult] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
+
+  // Share modal state
+  const [shareVisible, setShareVisible] = useState(false);
+  const [posterType, setPosterType] = useState<"report" | "general">("report");
+  const [selectedBgType, setSelectedBgType] = useState<"palace" | "mountain">("palace");
+  const openShare = useCallback(() => setShareVisible(true), []);
+  const closeShare = useCallback(() => setShareVisible(false), []);
 
   // ─── Auto-scroll to bottom ─────────────────────────────────────────────────
 
@@ -145,12 +159,9 @@ export default function HomePage() {
 
         let fullResponse = "";
 
-        await streamChat({
+        await streamChatViaAPI({
           messages: allMessages,
-          apiKey:
-            process.env.NEXT_PUBLIC_MINIMAX_API_KEY ??
-            "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E",
-          onChunk: (text) => {
+          onChunk: (text: string) => {
             fullResponse += text;
             setMessages((prev) =>
               prev.map((m) =>
@@ -163,8 +174,8 @@ export default function HomePage() {
           onDone: () => {
             setIsTyping(false);
           },
-          onError: (err) => {
-            fullResponse = `抱歉，遇到了一个问题：${err.message}。请稍后再试。`;
+          onError: (err: Error) => {
+            fullResponse = FRIENDLY_ERROR_MESSAGE;
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === typingId
@@ -177,11 +188,11 @@ export default function HomePage() {
         });
       } catch (err) {
         const errorMsg =
-          err instanceof Error ? err.message : "发送消息失败，请稍后重试。";
+          err instanceof Error ? err.message : FRIENDLY_ERROR_MESSAGE;
         setMessages((prev) =>
           prev.map((m) =>
             m.id === typingId
-              ? { ...m, content: `出错啦：${errorMsg}`, isTyping: false }
+              ? { ...m, content: errorMsg, isTyping: false }
               : m
           )
         );
@@ -230,12 +241,9 @@ export default function HomePage() {
 
         let fullResponse = "";
 
-        await streamChat({
+        await streamChatViaAPI({
           messages: allMessages,
-          apiKey:
-            process.env.NEXT_PUBLIC_MINIMAX_API_KEY ??
-            "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E",
-          onChunk: (text) => {
+          onChunk: (text: string) => {
             fullResponse += text;
             setMessages((prev) =>
               prev.map((m) =>
@@ -248,8 +256,8 @@ export default function HomePage() {
           onDone: () => {
             setIsTyping(false);
           },
-          onError: (err) => {
-            fullResponse = `抱歉，遇到了一个问题：${err.message}。请稍后再试。`;
+          onError: (err: Error) => {
+            fullResponse = FRIENDLY_ERROR_MESSAGE;
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === typingId
@@ -262,11 +270,11 @@ export default function HomePage() {
         });
       } catch (err) {
         const errorMsg =
-          err instanceof Error ? err.message : "发送消息失败，请稍后重试。";
+          err instanceof Error ? err.message : FRIENDLY_ERROR_MESSAGE;
         setMessages((prev) =>
           prev.map((m) =>
             m.id === typingId
-              ? { ...m, content: `出错啦：${errorMsg}`, isTyping: false }
+              ? { ...m, content: errorMsg, isTyping: false }
               : m
           )
         );
@@ -291,7 +299,7 @@ export default function HomePage() {
 要求：
 - 目的地：${destination}
 - 天数：${days}天
-- 年级：${grade}${interest ? `\n- 兴趣方向：${interest}` : ""}
+- 年级：${grade}${interest ? `\n- 兴趣方向：${interest}` : ""}${itineraryForm.intentionBase ? `\n- 意向基地：${itineraryForm.intentionBase}` : ""}
 
 请生成完整行程规划，包括：
 1. 总体行程概览
@@ -302,18 +310,15 @@ export default function HomePage() {
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
 
-      await streamChat({
+      await streamChatViaAPI({
         messages: [{ role: "user" as const, content: systemContent }, { role: "user" as const, content: prompt }],
-        apiKey:
-          process.env.NEXT_PUBLIC_MINIMAX_API_KEY ??
-          "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E",
-        onChunk: (text) => {
+        onChunk: (text: string) => {
           fullResponse += text;
           setItineraryResult(fullResponse);
         },
         onDone: () => setItineraryLoading(false),
-        onError: (err) => {
-          fullResponse = `生成失败：${err.message}`;
+        onError: (err: Error) => {
+          fullResponse = FRIENDLY_ERROR_MESSAGE;
           setItineraryResult(fullResponse);
           setItineraryLoading(false);
         },
@@ -342,6 +347,7 @@ export default function HomePage() {
 - 姓名：${name}
 - 学校：${school || "（未填写）"}
 - 年级：${grade}
+- 研学基地：${reportForm.base}
 - 研学主题：${theme}
 - 时间：${date || "（未填写）"}
 - 地点：${location || "（未填写）"}
@@ -362,26 +368,21 @@ ${summary || "（用户未填写具体内容）"}
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
 
-      await streamChat({
+      await streamChatViaAPI({
         messages: [{ role: "user" as const, content: systemContent }, { role: "user" as const, content: prompt }],
-        apiKey:
-          process.env.NEXT_PUBLIC_MINIMAX_API_KEY ??
-          "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E",
-        onChunk: (text) => {
+        onChunk: (text: string) => {
           fullResponse += text;
           setReportResult(fullResponse);
         },
         onDone: () => setReportLoading(false),
-        onError: (err) => {
-          fullResponse = `生成失败：${err.message}`;
+        onError: (err: Error) => {
+          fullResponse = FRIENDLY_ERROR_MESSAGE;
           setReportResult(fullResponse);
           setReportLoading(false);
         },
       });
     } catch (err) {
-      setReportResult(
-        `生成失败：${err instanceof Error ? err.message : "未知错误"}`
-      );
+      setReportResult(FRIENDLY_ERROR_MESSAGE);
       setReportLoading(false);
     }
   }, [reportForm]);
@@ -390,7 +391,22 @@ ${summary || "（用户未填写具体内容）"}
 
   return (
     <div className="app-container">
-      <Header />
+      <Header onShareClick={openShare} />
+      <ShareModal
+        visible={shareVisible}
+        onClose={closeShare}
+        posterType={posterType}
+        bgType={selectedBgType}
+        onBgTypeChange={setSelectedBgType}
+        reportData={{
+          studentName: reportForm.name,
+          school: reportForm.school,
+          grade: reportForm.grade,
+          base: reportForm.base,
+          theme: reportForm.theme,
+          date: reportForm.date,
+        }}
+      />
 
       {/* Tab Navigation */}
       <nav className="tab-nav" role="tablist">
@@ -616,6 +632,25 @@ ${summary || "（用户未填写具体内容）"}
                   </select>
                 </div>
 
+                <div className="form-group">
+                  <label className="form-label" htmlFor="intentionBase">
+                    意向基地（选填）
+                  </label>
+                  <input
+                    id="intentionBase"
+                    type="text"
+                    className="form-input"
+                    placeholder="例如：秦汉馆、西影电影基地"
+                    value={itineraryForm.intentionBase}
+                    onChange={(e) =>
+                      setItineraryForm((f) => ({
+                        ...f,
+                        intentionBase: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
                 <button
                   className="generate-btn"
                   onClick={handleGenerateItinerary}
@@ -634,16 +669,32 @@ ${summary || "（用户未填写具体内容）"}
             ) : (
               <div className={`itinerary-result ${itineraryResult ? "visible" : ""}`}>
                 <div className="result-header">
-                  <span className="result-title">🗺️ {itineraryForm.destination} {itineraryForm.days}天研学方案</span>
-                  <button
-                    className="back-btn"
-                    onClick={() => {
-                      setItineraryResult("");
-                      setItineraryForm({ destination: "西安", days: "1", grade: "初中生", interest: "" });
-                    }}
-                  >
-                    ← 重新规划
-                  </button>
+                  <span className="result-title">🗺️ {itineraryForm.destination} {itineraryForm.days}天研学方案${itineraryForm.intentionBase ? ` · ${itineraryForm.intentionBase}` : ""}</span>
+                  <div className="result-actions">
+                    <div className="template-tags">
+                      <button
+                        className="template-tag"
+                        onClick={openShare}
+                      >
+                        🗺️ 生成行程
+                      </button>
+                      <button
+                        className="template-tag tag-share"
+                        onClick={() => { setPosterType("general"); openShare(); }}
+                      >
+                        ↗ 分享链接
+                      </button>
+                      <button
+                        className="back-btn"
+                        onClick={() => {
+                          setItineraryResult("");
+                          setItineraryForm({ destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "" });
+                        }}
+                      >
+                        ← 重填
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="report-card">
                   <div className="report-text" style={{ whiteSpace: "pre-wrap", fontSize: "14px", lineHeight: "1.8" }}>
@@ -733,6 +784,22 @@ ${summary || "（用户未填写具体内容）"}
                 </div>
 
                 <div className="form-group">
+                  <label className="form-label" htmlFor="rbase">
+                    研学基地 *
+                  </label>
+                  <input
+                    id="rbase"
+                    type="text"
+                    className="form-input"
+                    placeholder="例如：秦汉馆、西影电影基地、张裕瑞纳城堡酒庄"
+                    value={reportForm.base}
+                    onChange={(e) =>
+                      setReportForm((f) => ({ ...f, base: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="form-group">
                   <label className="form-label" htmlFor="rtheme">
                     研学主题 *
                   </label>
@@ -801,7 +868,7 @@ ${summary || "（用户未填写具体内容）"}
                 <button
                   className="generate-btn"
                   onClick={handleGenerateReport}
-                  disabled={!reportForm.name.trim() || !reportForm.theme.trim() || reportLoading}
+                  disabled={!reportForm.name.trim() || !reportForm.theme.trim() || !reportForm.base.trim() || reportLoading}
                 >
                   {reportLoading ? (
                     <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
@@ -816,16 +883,32 @@ ${summary || "（用户未填写具体内容）"}
             ) : (
               <div className={`report-result ${reportResult ? "visible" : ""}`}>
                 <div className="result-header">
-                  <span className="result-title">📄 研学报告</span>
-                  <button
-                    className="back-btn"
-                    onClick={() => {
-                      setReportResult("");
-                      setReportForm({ name: "", school: "", grade: "初一", theme: "", date: "", location: "", summary: "" });
-                    }}
-                  >
-                    ← 重新生成
-                  </button>
+                  <span className="result-title">📄 研学报告 · {reportForm.base}</span>
+                  <div className="result-actions">
+                    <div className="template-tags">
+                      <button
+                        className="template-tag"
+                        onClick={() => setPosterType("report")}
+                      >
+                        🏛️ 生成报告
+                      </button>
+                      <button
+                        className="template-tag tag-share"
+                        onClick={() => { setPosterType("general"); openShare(); }}
+                      >
+                        ↗ 分享链接
+                      </button>
+                      <button
+                        className="back-btn"
+                        onClick={() => {
+                          setReportResult("");
+                          setReportForm({ name: "", school: "", grade: "初一", theme: "", date: "", location: "", summary: "", base: "" });
+                        }}
+                      >
+                        ← 重填
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="report-card">
                   <div className="report-text">

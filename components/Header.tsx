@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import ShareModal from "./ShareModal";
+interface HeaderProps {
+  onShareClick: () => void;
+}
 
-export default function Header() {
-  const [showShare, setShowShare] = useState(false);
-
+export default function Header({ onShareClick }: HeaderProps) {
   return (
     <>
       <header className="header">
@@ -16,7 +15,7 @@ export default function Header() {
         <div className="header-actions">
           <button
             className="share-btn"
-            onClick={() => setShowShare(true)}
+            onClick={onShareClick}
             aria-label="分享"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -28,7 +27,6 @@ export default function Header() {
           </button>
         </div>
       </header>
-      <ShareModal visible={showShare} onClose={() => setShowShare(false)} />
     </>
   );
 }

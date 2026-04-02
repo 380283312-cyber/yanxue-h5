@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { streamChat, buildSystemPrompt, Message } from "@/lib/minimax";
+import { streamChat, buildSystemPrompt, Message, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 
-const API_KEY = process.env.MINIMAX_API_KEY ?? "sk-cp-cmgKG7kTdqiTqD1v7jJd3edMnKKNd_MvhEjijbhxz3KhjooC9ULMuYu05oAWLLXk11u68xkx1H30AV5qgPFn7uMTvbYv1o1HppDH3ooLdMPkRbkF4Fxey8E";
+const API_KEY = process.env.MINIMAX_API_KEY;
 const MODEL = process.env.MINIMAX_MODEL ?? "MiniMax-M2.7";
+
+if (!API_KEY) {
+  console.error("MINIMAX_API_KEY 环境变量未设置");
+}
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    if (!API_KEY) {
+      return NextResponse.json(
+        { error: FRIENDLY_ERROR_MESSAGE },
+        { status: 500 }
+      );
+    }
+
     const body = await req.json();
     const { messages } = body as { messages: Message[] };
 
@@ -19,14 +30,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Inject system prompt at the beginning
     const systemMessage: Message = {
       role: "user",
       content: buildSystemPrompt(),
     };
 
-    // Convert user/assistant history, prepend system instruction
-    // MiniMax API expects user/assistant alternating
     const apiMessages: Message[] = [
       { role: "user", content: systemMessage.content + "\n\n请确认你已经理解上述角色设定，并以后续的用户消息开始你的顾问工作。" },
       ...messages,

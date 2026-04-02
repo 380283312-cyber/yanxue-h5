@@ -537,6 +537,24 @@ a {
   transform: none;
 }
 
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.typing-indicator .typing-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--white);
+  border-radius: 50%;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typing-indicator .typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-indicator .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
 /* ===================== */
 /* ITINERARY PANEL */
 /* ===================== */
@@ -655,37 +673,6 @@ a {
 
 .itinerary-result.visible {
   display: flex;
-}
-
-.result-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.result-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--secondary);
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-full);
-  font-size: 13px;
-  color: var(--gray-600);
-  transition: all 0.2s ease;
-}
-
-.back-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
 }
 
 /* Day Card */
@@ -1523,6 +1510,267 @@ a {
 .courses-empty-reset:hover {
   background: var(--primary-dark);
 }
+
+/* ── 结果面板分享按钮 ──────────────────────────────────────────────── */
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.result-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-actions {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.template-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.template-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.template-tag:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.template-tag.tag-share {
+  background: var(--secondary);
+}
+
+.template-tag.tag-share:hover {
+  opacity: 0.88;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  color: var(--gray-600);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.share-result-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: var(--primary-grad);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(1,195,163,0.35);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.share-result-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(1,195,163,0.45);
+}
+
+.share-result-btn:active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ── 研学表情体系 ─────────────────────────────────────────────────── */
+:root {
+  --grad-红色教育: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+  --grad-传统文化: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  --grad-劳动实践: linear-gradient(135deg, #22c55e 0%, #86efac 100%);
+  --grad-自然生态: linear-gradient(135deg, #10b981 0%, #6ee7b7 100%);
+  --grad-国防科工: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  --grad-国情教育: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  --grad-其他: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%);
+
+  --primary-grad: linear-gradient(135deg, #01c3a3 0%, #00e0b0 50%, #00f5c4 100%);
+  --primary-grad-dark: linear-gradient(135deg, #00a88a 0%, #009977 100%);
+  --accent-orange: #ff7c4d;
+  --accent-yellow: #ffc53d;
+  --accent-blue: #3b82f6;
+}
+
+/* 圆体标题 */
+h1, h2, h3,
+.welcome-title,
+.itinerary-form-title,
+.result-title,
+.biz-form-title {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+/* ── 研学标签体系 ─────────────────────────────────────────────────── */
+.tag-红色教育 { background: #fef2f2; color: #dc2626; }
+.tag-传统文化 { background: #fffbeb; color: #d97706; }
+.tag-劳动实践 { background: #f0fdf4; color: #16a34a; }
+.tag-自然生态 { background: #ecfdf5; color: #059669; }
+.tag-国防科工 { background: #eff6ff; color: #2563eb; }
+.tag-国情教育 { background: #f5f3ff; color: #7c3aed; }
+.tag-其他     { background: #f8fafc; color: #64748b; }
+
+/* ── 研学卡片升级 ─────────────────────────────────────────────────── */
+.course-card {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.course-card-inner {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.course-card-inner:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.course-card-cover {
+  height: 112px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+/* 渐变背景 */
+.course-card-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--card-grad, var(--grad-其他));
+  opacity: 0.92;
+}
+/* 基地图优先显示 */
+.course-card-cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.course-card-emoji {
+  position: relative;
+  z-index: 1;
+  font-size: 44px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.22));
+}
+
+.course-card-info {
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(8px);
+  padding: 11px 12px 13px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.course-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.course-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.course-card-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.course-card-days-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.course-card-fee {
+  font-size: 12px;
+  font-weight: 700;
+  color: #01c3a3;
+  white-space: nowrap;
+}
+
+.course-card-fee--pending {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* 分类标签背景色（兼容旧class名） */
+.course-card-tag.tag-red     { background: #fef2f2; color: #dc2626; }
+.course-card-tag.tag-yellow  { background: #fffbeb; color: #d97706; }
+.course-card-tag.tag-green   { background: #f0fdf4; color: #16a34a; }
+.course-card-tag.tag-teal    { background: #ecfdf5; color: #059669; }
+.course-card-tag.tag-blue    { background: #eff6ff; color: #2563eb; }
+.course-card-tag.tag-purple  { background: #f5f3ff; color: #7c3aed; }
+.course-card-tag.tag-gray    { background: #f8fafc; color: #64748b; }
 
 /* ===================== */
 /* COURSE DETAIL MODAL */

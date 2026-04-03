@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat, buildSystemPrompt, Message, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 
 const API_KEY = process.env.MINIMAX_API_KEY;
-const MODEL = process.env.MINIMAX_MODEL ?? "MiniMax-M2.7";
+const MODEL = process.env.MINIMAX_MODEL ?? "MiniMax-M2.5-Fast";
 
 if (!API_KEY) {
   console.error("MINIMAX_API_KEY 环境变量未设置");
 }
 
-export const runtime = "nodejs";
-export const maxDuration = 300;
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {

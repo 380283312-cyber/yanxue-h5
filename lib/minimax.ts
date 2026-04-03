@@ -50,7 +50,7 @@ export const FRIENDLY_ERROR_MESSAGE = "网络不稳定，请稍后重试";
 const RETRY_DELAYS = [1000, 2000, 3000];
 const MAX_RETRIES = 3;
 
-const DEFAULT_MODEL = "MiniMax-M2.7";
+const DEFAULT_MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2.5-Fast";
 
 async function fetchWithRetry(
   url: string,

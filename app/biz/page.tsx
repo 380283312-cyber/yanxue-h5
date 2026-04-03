@@ -5,6 +5,7 @@ import Link from "next/link";
 import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 import { streamChatDirect } from "@/lib/streamDirect";
 import { SchoolPosterModal, SchoolPosterProps } from "@/components/SchoolPosterCanvas";
+import { OrgPosterModal, OrgPosterProps } from "@/components/OrgPosterCanvas";
 
 type BizType = "org" | "school";
 
@@ -17,6 +18,8 @@ export default function BizPage() {
   const [view, setView] = useState<"form" | "result">("form");
   const [showPosterModal, setShowPosterModal] = useState(false);
   const [posterProps, setPosterProps] = useState<SchoolPosterProps | null>(null);
+  const [showOrgPosterModal, setShowOrgPosterModal] = useState(false);
+  const [orgPosterProps, setOrgPosterProps] = useState<OrgPosterProps | null>(null);
 
   const extractSchoolPosterInfo = (resultText: string): SchoolPosterProps => {
     const getMatch = (pattern: RegExp, defaultValue: string): string => {
@@ -45,10 +48,53 @@ export default function BizPage() {
     };
   };
 
+  const extractOrgPosterInfo = (resultText: string): OrgPosterProps => {
+    const getMatch = (pattern: RegExp, defaultValue: string): string => {
+      const match = resultText.match(pattern);
+      return match ? match[1].trim() : defaultValue;
+    };
+
+    const orgName = getMatch(/机构名称：([^\n]+)/, orgForm.name || "待填写");
+    const orgType = getMatch(/机构类型：([^\n]+)/, orgForm.type || "研学机构");
+    const location = getMatch(/所在地：([^\n]+)/, orgForm.location || "待填写");
+    const targetAge = getMatch(/适合年龄：([^\n]+)/, orgForm.targetAge || "待填写");
+    const price = getMatch(/参考价格：([^\n]+)/, orgForm.price || "");
+    const contactInfo = getMatch(/联系方式：([^\n]+)/, "");
+
+    let features = "";
+    const featuresMatch = resultText.match(/【课程介绍】[\s\S]*?【/);
+    if (featuresMatch) {
+      features = featuresMatch[0]
+        .replace(/【课程介绍】/, "")
+        .replace(/【.*$/, "")
+        .trim()
+        .slice(0, 200);
+    }
+    if (!features) {
+      features = orgForm.features || "机构特色和课程介绍";
+    }
+
+    return {
+      orgName,
+      orgType,
+      location,
+      targetAge,
+      features,
+      price: price || undefined,
+      contactInfo: contactInfo || undefined,
+    };
+  };
+
   const handleGeneratePoster = () => {
     const props = extractSchoolPosterInfo(result);
     setPosterProps(props);
     setShowPosterModal(true);
+  };
+
+  const handleGenerateOrgPoster = () => {
+    const props = extractOrgPosterInfo(result);
+    setOrgPosterProps(props);
+    setShowOrgPosterModal(true);
   };
 
   // Org form
@@ -99,7 +145,17 @@ export default function BizPage() {
 按日期分，写清楚每天的主题、活动内容、学习目标
 
 ---
-要求：语言专业有吸引力，适合微信传播。`;
+要求：语言专业有吸引力，适合微信传播。
+
+请在结果末尾按以下格式输出招生海报所需信息（请严格按此格式）：
+
+【海报信息】
+机构名称：${orgForm.name}
+机构类型：${orgForm.type}
+所在地：${orgForm.location || "待填写"}
+适合年龄：${orgForm.targetAge}
+参考价格：${orgForm.price || "待填写"}
+联系方式：待填写`;
 
   const buildSchoolPrompt = () =>
     `你是一位专业的学校研学活动策划专家。请为以下学校生成一套完整的研学活动方案：
@@ -538,6 +594,25 @@ export default function BizPage() {
                 🖨️ 生成招募海报
               </button>
             )}
+
+            {bizType === "org" && !loading && (
+              <button
+                onClick={handleGenerateOrgPoster}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: "linear-gradient(135deg, #01c3a3 0%, #01a383 100%)",
+                  border: "none",
+                  borderRadius: "16px",
+                  color: "white",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🖨️ 生成招生海报
+              </button>
+            )}
           </>
         )}
       </div>
@@ -546,6 +621,13 @@ export default function BizPage() {
         <SchoolPosterModal
           props={posterProps}
           onClose={() => setShowPosterModal(false)}
+        />
+      )}
+
+      {showOrgPosterModal && orgPosterProps && (
+        <OrgPosterModal
+          props={orgPosterProps}
+          onClose={() => setShowOrgPosterModal(false)}
         />
       )}
 

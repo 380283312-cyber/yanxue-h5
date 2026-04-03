@@ -1,0 +1,15 @@
+[Unit]
+Description=研学H5 Chat API Server
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+Environment=OPENROUTER_API_KEY=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
+ExecStart=/usr/bin/node /opt/chat-server.js
+StandardOutput=append:/var/log/chat-server.log
+StandardError=append:/var/log/chat-server.log
+
+[Install]
+WantedBy=multi-user.target

@@ -181,14 +181,14 @@ export default function ShareModal({
                       >
                         <img
                           src={THUMBNAILS[bg]}
-                          alt={bg === "palace" ? "故宫" : "黄山"}
+                          alt={bg === "palace" ? "古典信纸" : "现代信纸"}
                           style={{
                             width: "100%",
                             height: "70px",
                             objectFit: "cover",
                             borderRadius: "6px",
                             display: "block",
-                            background: "#e0e0e0",
+                            background: "#e8e4dc",
                           }}
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
@@ -198,7 +198,7 @@ export default function ShareModal({
                           marginTop: "4px",
                           fontWeight: bgType === bg ? "bold" : "normal",
                         }}>
-                          {bg === "palace" ? "🏯 故宫" : "🏔️ 黄山"}
+                          {bg === "palace" ? "📜 古典信纸" : "📋 现代信纸"}
                         </div>
                       </button>
                     ))}

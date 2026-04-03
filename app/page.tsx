@@ -11,6 +11,9 @@ import ReportPosterCanvas from "@/components/ReportPosterCanvas";
 import PaywallModal from "@/components/PaywallModal";
 import { streamChatViaAPI, buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 import { checkUsage, recordUsage, getRemaining } from "@/lib/useUsageTracker";
+import { useChatStore } from "@/store/chatStore";
+import { useItineraryStore } from "@/store/itineraryStore";
+import { useReportStore } from "@/store/reportStore";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
 // 基于720条真实研学课程数据分析设计，贴合数据分布
@@ -76,35 +79,40 @@ interface ReportFormData {
 export default function HomePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("chat");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const messages = useChatStore((state) => state.messages);
+  const isTyping = useChatStore((state) => state.isTyping);
+  const chatStore = useChatStore();
+  const setMessages = (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+    if (typeof updater === 'function') {
+      chatStore.setMessages(updater(chatStore.messages));
+    } else {
+      chatStore.setMessages(updater);
+    }
+  };
+  const setIsTyping = (v: boolean) => chatStore.setIsTyping(v);
+  const showWelcome = useChatStore((s) => s.showWelcome);
+  const setShowWelcome = (v: boolean) => chatStore.setShowWelcome(v);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Itinerary state
-  const [itineraryForm, setItineraryForm] = useState<ItineraryFormData>({
-    destination: "西安",
-    days: "1",
-    grade: "初中生",
-    interest: "",
-    intentionBase: "",
-  });
-  const [itineraryResult, setItineraryResult] = useState("");
-  const [itineraryLoading, setItineraryLoading] = useState(false);
+  const itineraryStore = useItineraryStore();
+  const { formData: itineraryForm, result: itineraryResult, isLoading: itineraryLoading } = itineraryStore;
+  const setItineraryForm = (v: Partial<ItineraryFormData> | ((prev: ItineraryFormData) => Partial<ItineraryFormData>)) => {
+    if (typeof v === "function") itineraryStore.setFormData(v(itineraryStore.formData));
+    else itineraryStore.setFormData(v);
+  };
+  const setItineraryResult = itineraryStore.setResult;
+  const setItineraryLoading = itineraryStore.setIsLoading;
 
   // Report state
-  const [reportForm, setReportForm] = useState<ReportFormData>({
-    name: "",
-    school: "",
-    grade: "初一",
-    theme: "",
-    date: "",
-    location: "",
-    summary: "",
-    base: "",
-  });
-  const [reportResult, setReportResult] = useState("");
-  const [reportLoading, setReportLoading] = useState(false);
+  const reportStore = useReportStore();
+  const { formData: reportForm, result: reportResult, isLoading: reportLoading } = reportStore;
+  const setReportForm = (v: Partial<ReportFormData> | ((prev: ReportFormData) => Partial<ReportFormData>)) => {
+    if (typeof v === "function") reportStore.setFormData(v(reportStore.formData));
+    else reportStore.setFormData(v);
+  };
+  const setReportResult = reportStore.setResult;
+  const setReportLoading = reportStore.setIsLoading;
 
   // Share modal state
   const [shareVisible, setShareVisible] = useState(false);

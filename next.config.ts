@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // output: "export" removed — required for /api/chat route to work
+  output: "export",
   images: {
     unoptimized: true,
   },

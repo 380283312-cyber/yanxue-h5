@@ -19,15 +19,6 @@ export default function ReportPage() {
     }
   }, []);
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      alert("分享链接已复制，粘贴给朋友即可查看！");
-    } catch {
-      alert("复制失败，请手动复制地址栏链接");
-    }
-  };
-
   const handleCopyContent = async () => {
     try {
       await navigator.clipboard.writeText(report?.content || "");
@@ -67,10 +58,10 @@ export default function ReportPage() {
         </button>
         <span style={{ fontSize: "16px", fontWeight: "600" }}>研学报告</span>
         <button
-          onClick={handleCopyLink}
+          onClick={() => router.push("/")}
           style={{ background: "none", border: "none", color: "white", fontSize: "14px", cursor: "pointer" }}
         >
-          分享
+          💬 继续咨询
         </button>
       </div>
 
@@ -135,7 +126,7 @@ export default function ReportPage() {
           📋 复制内容
         </button>
         <button
-          onClick={handleCopyLink}
+          onClick={() => router.push("/")}
           style={{
             flex: 1,
             padding: "14px",
@@ -148,7 +139,7 @@ export default function ReportPage() {
             cursor: "pointer",
           }}
         >
-          🔗 复制链接
+          💬 继续咨询
         </button>
       </div>
     </div>

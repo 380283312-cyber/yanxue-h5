@@ -54,6 +54,12 @@ function incrementCount(): number {
  * - allowed: false, isVip: true = VIP用户，无限制
  */
 export function checkUsage(): { allowed: boolean; remaining: number; isVip: boolean } {
+  // 【临时开关】支付打通前先全免费，放开这里改为 true 即可启用付费
+  const PAYWALL_ENABLED = false;
+  if (!PAYWALL_ENABLED) {
+    return { allowed: true, remaining: FREE_LIMIT, isVip: false };
+  }
+
   if (!isBrowser()) return { allowed: true, remaining: FREE_LIMIT, isVip: false };
 
   // 检查VIP状态（后续接入真实VIP逻辑）

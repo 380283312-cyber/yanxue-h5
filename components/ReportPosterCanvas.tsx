@@ -78,10 +78,12 @@ export default function ReportPosterCanvas({
 
     // ─── Build summary (max 8 lines) ───────────────────────────────
     const SUMMARY_HEAD_H = 40;
-    const SUMMARY_MAX_LINES = 20;
+    const SUMMARY_MAX_LINES = 30;
     const INNER_PAD = 20;
     const availW = CARD_W - INNER_PAD * 2;
-    const summaryLines = reportSummary ? wrap(reportSummary, Math.floor(availW / 11)) : [];
+    // Use 13px Chinese font: each char ≈ 13px wide, leave breathing room
+    const CHARS_PER_LINE = Math.floor(availW / 14);
+    const summaryLines = reportSummary ? wrap(reportSummary, CHARS_PER_LINE) : [];
     const clippedLines = summaryLines.slice(0, SUMMARY_MAX_LINES);
     const summaryBlockH = clippedLines.length * LINE_H + (clippedLines.length > 1 ? (clippedLines.length - 1) * 4 : 0);
     const SUMMARY_CARD_H = SUMMARY_HEAD_H + summaryBlockH + INNER_PAD;

@@ -53,6 +53,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#01C3A3",
+  interactiveWidget: "resizes-visual",
 };
 
 export default function RootLayout({
@@ -64,6 +65,8 @@ export default function RootLayout({
     <html lang="zh-CN">
       <head>
         <link rel="icon" href="/icon.png" type="image/png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>{children}</body>
     </html>

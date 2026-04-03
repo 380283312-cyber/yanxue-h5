@@ -74,7 +74,7 @@ export function checkUsage(): { allowed: boolean; remaining: number; isVip: bool
   // 新的一天，重置计数
   if (storedDate !== today) {
     resetCount();
-    return { allowed: true, remaining: FREE_LIMIT - 1, isVip: false };
+    return { allowed: true, remaining: FREE_LIMIT, isVip: false };
   }
 
   const count = getStoredCount();

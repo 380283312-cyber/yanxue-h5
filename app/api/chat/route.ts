@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
         let fullResponse = "";
 
         try {
+          const abortController = new AbortController();
+          const timeout = setTimeout(() => abortController.abort(), 60000);
+
           await streamChat({
             messages: apiMessages,
             apiKey: API_KEY,
@@ -57,18 +60,24 @@ export async function POST(req: NextRequest) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text })}\n\n`));
             },
             onDone: () => {
+              clearTimeout(timeout);
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: fullResponse })}\n\n`));
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
             },
             onError: (error) => {
+              clearTimeout(timeout);
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`));
               controller.close();
             },
           });
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : "Unknown error";
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n\n`));
+          if (err instanceof Error && err.name === 'AbortError') {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "请求超时，请稍后重试" })}\n\n`));
+          } else {
+            const errorMessage = err instanceof Error ? err.message : "Unknown error";
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n\n`));
+          }
           controller.close();
         }
       },

@@ -206,8 +206,8 @@ export default function ShareModal({
                 </div>
               )}
 
-              {/* 生成中提示（还未有 posterDataUrl） */}
-              {generating && !posterDataUrl && (
+          {/* 生成中提示（posterDataUrl 未准备好） */}
+          {generating && (
                 <div style={{
                   textAlign: "center",
                   padding: "24px",

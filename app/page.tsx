@@ -9,7 +9,8 @@ import ShareModal from "@/components/ShareModal";
 import PosterCanvas from "@/components/PosterCanvas";
 import ReportPosterCanvas from "@/components/ReportPosterCanvas";
 import PaywallModal from "@/components/PaywallModal";
-import { streamChatViaAPI, buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
+import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
+import { streamChatDirect } from "@/lib/streamDirect";
 import { checkUsage, recordUsage, getRemaining } from "@/lib/useUsageTracker";
 import { useChatStore } from "@/store/chatStore";
 import { useItineraryStore } from "@/store/itineraryStore";
@@ -82,13 +83,7 @@ export default function HomePage() {
   const messages = useChatStore((state) => state.messages);
   const isTyping = useChatStore((state) => state.isTyping);
   const chatStore = useChatStore();
-  const setMessages = (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
-    if (typeof updater === 'function') {
-      chatStore.setMessages(updater(chatStore.messages));
-    } else {
-      chatStore.setMessages(updater);
-    }
-  };
+  const setMessages = chatStore.setMessages;
   const setIsTyping = (v: boolean) => chatStore.setIsTyping(v);
   const showWelcome = useChatStore((s) => s.showWelcome);
   const setShowWelcome = (v: boolean) => chatStore.setShowWelcome(v);
@@ -199,7 +194,7 @@ export default function HomePage() {
 
         let fullResponse = "";
 
-        await streamChatViaAPI({
+        await streamChatDirect({
           messages: allMessages,
           onChunk: (text: string) => {
             fullResponse += text;
@@ -288,7 +283,7 @@ export default function HomePage() {
 
         let fullResponse = "";
 
-        await streamChatViaAPI({
+        await streamChatDirect({
           messages: allMessages,
           onChunk: (text: string) => {
             fullResponse += text;
@@ -365,7 +360,7 @@ export default function HomePage() {
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
 
-      await streamChatViaAPI({
+      await streamChatDirect({
         messages: [{ role: "user" as const, content: systemContent }, { role: "user" as const, content: prompt }],
         onChunk: (text: string) => {
           fullResponse += text;
@@ -478,7 +473,7 @@ ${summary || "（用户未填写具体内容）"}
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
 
-      await streamChatViaAPI({
+      await streamChatDirect({
         messages: [{ role: "user" as const, content: systemContent }, { role: "user" as const, content: prompt }],
         onChunk: (text: string) => {
           fullResponse += text;

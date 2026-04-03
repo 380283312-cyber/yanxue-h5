@@ -27,10 +27,13 @@ export default function ChatBubble({ message }: ChatBubbleProps) {
   if (message.isTyping) {
     return (
       <div className="chat-bubble-wrap ai">
-        <div className="chat-bubble-typing" aria-label="AI正在输入">
-          <div className="typing-dot" />
-          <div className="typing-dot" />
-          <div className="typing-dot" />
+        <div className="chat-bubble-typing ai-thinking" aria-label="AI正在思考">
+          <span className="ai-thinking-text">🤖 正在思考</span>
+          <div className="typing-dots">
+            <div className="typing-dot" />
+            <div className="typing-dot" />
+            <div className="typing-dot" />
+          </div>
         </div>
       </div>
     );

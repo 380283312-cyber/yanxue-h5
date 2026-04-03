@@ -77,9 +77,11 @@ export default function ReportPage() {
       {/* 报告内容 - 独立滚动区域 */}
       <div style={{
         flex: 1,
+        minHeight: 0,
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         padding: "16px",
+        paddingBottom: "90px",
         overscrollBehavior: "contain",
       }}>
         <div style={{

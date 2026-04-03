@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useState } from "react";
 
 export interface ChatMessage {
   id: string;
@@ -19,6 +19,36 @@ function formatTime(date: Date): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function CopyBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title="复制"
+      style={{
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        fontSize: "11px",
+        color: copied ? "#01c3a3" : "rgba(0,0,0,0.25)",
+        padding: "2px 4px",
+        borderRadius: "4px",
+        transition: "color 0.15s",
+        flexShrink: 0,
+      }}
+    >
+      {copied ? "✓" : "复制"}
+    </button>
+  );
 }
 
 export default function ChatBubble({ message }: ChatBubbleProps) {
@@ -41,7 +71,10 @@ export default function ChatBubble({ message }: ChatBubbleProps) {
 
   return (
     <div className={`chat-bubble-wrap ${isUser ? "user" : "ai"}`}>
-      <span className="chat-bubble-time">{formatTime(message.timestamp)}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <span className="chat-bubble-time">{formatTime(message.timestamp)}</span>
+        {!isUser && <CopyBtn text={message.content} />}
+      </div>
       <div className="chat-bubble">{message.content}</div>
     </div>
   );

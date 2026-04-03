@@ -18,12 +18,21 @@ export default function ReportPage() {
     }
   }, []);
 
-  const handleCopy = async () => {
+  const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      alert("链接已复制，粘贴给朋友即可查看！");
+      alert("分享链接已复制，粘贴给朋友即可查看！");
     } catch {
       alert("复制失败，请手动复制地址栏链接");
+    }
+  };
+
+  const handleCopyContent = async () => {
+    try {
+      await navigator.clipboard.writeText(report?.content || "");
+      alert("报告内容已复制！");
+    } catch {
+      alert("复制失败");
     }
   };
 
@@ -55,7 +64,7 @@ export default function ReportPage() {
         </button>
         <span style={{ fontSize: "16px", fontWeight: "600" }}>研学报告</span>
         <button
-          onClick={handleCopy}
+          onClick={handleCopyLink}
           style={{ background: "none", border: "none", color: "white", fontSize: "14px", cursor: "pointer" }}
         >
           分享
@@ -97,11 +106,29 @@ export default function ReportPage() {
         padding: "12px 16px",
         paddingBottom: "max(12px, env(safe-area-inset-bottom))",
         boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
+        display: "flex",
+        gap: "10px",
       }}>
         <button
-          onClick={handleCopy}
+          onClick={handleCopyContent}
           style={{
-            width: "100%",
+            flex: 1,
+            padding: "14px",
+            background: "white",
+            border: "1.5px solid #01c3a3",
+            borderRadius: "12px",
+            color: "#01c3a3",
+            fontSize: "15px",
+            fontWeight: "600",
+            cursor: "pointer",
+          }}
+        >
+          📋 复制内容
+        </button>
+        <button
+          onClick={handleCopyLink}
+          style={{
+            flex: 1,
             padding: "14px",
             background: "linear-gradient(135deg, #01c3a3 0%, #00a88a 100%)",
             color: "white",
@@ -112,7 +139,7 @@ export default function ReportPage() {
             cursor: "pointer",
           }}
         >
-          📋 复制分享链接
+          🔗 复制链接
         </button>
       </div>
     </div>

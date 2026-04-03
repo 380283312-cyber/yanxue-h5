@@ -786,9 +786,13 @@ ${summary || "（用户未填写具体内容）"}
                     <div className="template-tags">
                       <button
                         className="template-tag"
-                        onClick={openShare}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(itineraryResult);
+                          } catch {}
+                        }}
                       >
-                        🗺️ 分享链接
+                        📋 复制内容
                       </button>
                       <button
                         className="template-tag tag-share"

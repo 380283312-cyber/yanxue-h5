@@ -168,10 +168,11 @@ export async function streamChatViaAPI({
   onDone,
   onError,
 }: ChatAPIOptions): Promise<void> {
-  const baseUrl = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE
-    ? process.env.NEXT_PUBLIC_API_BASE
+  // 优先用 env 指定地址（Vercel部署时），否则走相对路径（腾讯云nginx代理）
+  const baseUrl = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE?.trim())
+    ? process.env.NEXT_PUBLIC_API_BASE.trim()
     : '';
-  const url = `${baseUrl}/api/chat`;
+  const url = baseUrl ? `${baseUrl}/api/chat` : '/api/chat';
 
   try {
     const response = await fetch(url, {

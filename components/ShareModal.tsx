@@ -107,10 +107,10 @@ export default function ShareModal({
           {posterDataUrl && posterType === "report" ? (
             <div style={{ marginBottom: "12px" }}>
               <div style={{
-                border: "3px solid #C9A84C",
+                border: "2px solid #C9A84C",
                 borderRadius: "12px",
                 overflow: "hidden",
-                maxHeight: "360px",
+                maxHeight: "480px",
                 overflowY: "auto",
                 background: "#faf6ee",
               }}>

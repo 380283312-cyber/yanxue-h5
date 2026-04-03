@@ -39,7 +39,7 @@ const server = http.createServer(async (req, res) => {
         model: model || DEFAULT_MODEL,
         messages,
         max_tokens: 2048,
-        stream: false,  // non-streaming to get clean complete response
+        stream: false,
       });
 
       const urlObj = new URL(OPENROUTER_URL);
@@ -62,10 +62,8 @@ const server = http.createServer(async (req, res) => {
           try {
             const parsed = JSON.parse(data);
             const msg = parsed.choices && parsed.choices[0] && parsed.choices[0].message || {};
-            const rawText = String(msg.content || msg.reasoning || '').trim();
-
-            // Extract clean answer text
-            const answer = extractAnswer(rawText);
+            // Use content if available, otherwise reasoning
+            let text = msg.content || String(msg.reasoning || '');
 
             res.writeHead(200, {
               'Content-Type': 'text/event-stream',
@@ -73,14 +71,18 @@ const server = http.createServer(async (req, res) => {
               'Connection': 'keep-alive',
             });
 
-            if (!answer) {
+            if (!text) {
               res.write('data: ' + JSON.stringify({ type: 'done' }) + '\n\n');
               res.end();
               return;
             }
 
-            // Stream answer in sentence-level chunks
-            const chunks = splitIntoChunks(answer, 80);
+            // Clean up the text: remove thinking markers like "The user asks... They want..." pattern
+            // and extract the actual answer portion
+            const cleaned = cleanText(text);
+
+            // Stream cleaned text in sentence chunks
+            const chunks = splitIntoChunks(cleaned, 60);
             let i = 0;
             function sendNext() {
               if (i >= chunks.length) {
@@ -90,13 +92,12 @@ const server = http.createServer(async (req, res) => {
               }
               res.write('data: ' + JSON.stringify({ type: 'chunk', text: chunks[i] }) + '\n\n');
               i++;
-              // Send next chunk after short delay for visible streaming effect
-              setTimeout(sendNext, 40);
+              setTimeout(sendNext, 30);
             }
             sendNext();
 
           } catch (e) {
-            console.error('Parse error:', e.message);
+            console.error('Parse error:', e.message, 'data:', data.slice(0, 200));
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Failed to parse response' }));
           }
@@ -119,10 +120,9 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-// Split text into chunks at sentence boundaries (max 80 chars each)
+// Split text into sentence-level chunks (max 60 chars each)
 function splitIntoChunks(text, maxChars) {
   const chunks = [];
-  // Split by Chinese sentence endings, newlines, or major punctuation
   const sentences = text.split(/(?<=[。！？\n])/);
   let current = '';
 
@@ -132,8 +132,8 @@ function splitIntoChunks(text, maxChars) {
       current += sent;
     } else {
       if (current) chunks.push(current.trim());
-      // If a single sentence is longer than maxChars, break it by words
       if (sent.length > maxChars) {
+        // Break long sentence by character count
         let sub = sent;
         while (sub.length > maxChars) {
           chunks.push(sub.slice(0, maxChars));
@@ -149,56 +149,31 @@ function splitIntoChunks(text, maxChars) {
   return chunks;
 }
 
-// Extract the actual answer from reasoning field
-// The reasoning contains thinking + final answer mixed together
-function extractAnswer(text) {
+// Clean thinking-heavy text to extract just the answer
+function cleanText(text) {
   if (!text) return '';
   const t = text.trim();
   if (!t) return '';
 
-  // Strategy: Look for answer after key answer indicators
-  const patterns = [
-    // Chinese: "答：...以下是..."
-    /(?:答[案是：:]\s*)([\s\S]{10,1000})/,
-    // Chinese: "以下是...（完整方案/报告/内容）"
-    /(?:以下是[\s\S]{0,30})([\u4e00-\u9fff][\s\S]{10,800})/,
-    // Chinese: "总结[：:]\s*"
-    /(?:总结[：:]\s*)([\s\S]{10,500})/,
-    // Chinese: "完整" answer
-    /(?:完整[的]?\s*)([\u4e00-\u9fff][\s\S]{20,500})/,
-    // After "---" divider (common in model outputs)
-    /(?:[-—]{5,}[\s\S]*?)([\s\S]{20,800})/,
-  ];
-
-  for (const p of patterns) {
-    const m = t.match(p);
-    if (m) {
-      const answer = m[1].trim();
-      // Clean up the answer
-      const cleaned = answer
-        .replace(/^其?实?[，,]?\s*/, '')
-        .replace(/^(The user|I think|I believe|In conclusion|In summary)[，,:\s]*/gi, '')
-        .trim();
-      if (cleaned.length > 5) return cleaned;
-    }
+  // If the text is mostly answer-like (Chinese characters present, reasonable length)
+  // return it directly
+  const chineseCount = (t.match(/[\u4e00-\u9fff]/g) || []).length;
+  if (chineseCount > 20) {
+    // Likely Chinese answer - remove leading/trailing noise
+    const m = t.match(/([\u4e00-\u9fff][\s\S]{10,})/);
+    if (m) return m[1].trim();
+    return t;
   }
 
-  // Fallback: get the last substantial Chinese paragraph (last 400 chars of meaningful content)
-  // Find Chinese text blocks
-  const chineseBlocks = t.match(/[\u4e00-\u9fff][^\n]{10,400}/g) || [];
-  if (chineseBlocks.length > 0) {
-    // Return the last substantial Chinese block
-    const last = chineseBlocks[chineseBlocks.length - 1].trim();
-    if (last.length > 10) return last;
-  }
+  // For English/thinking-heavy text, try to extract the answer after "Answer:" or "The"
+  const answerMatch = t.match(/(?:answer is|answer:|the answer is|答案是)[:\s]*(["\u4e00-\u9fff][^"]*)/i)
+                   || t.match(/^(.{20,})$/);
+  if (answerMatch) return answerMatch[1].trim();
 
-  // Last resort: return last 300 chars of the reasoning
-  const last300 = t.slice(-300).trim();
-  if (last300.length > 10) return last300;
-
-  return t.slice(-150);
+  // Last resort: return last 200 chars (usually contains the final answer)
+  return t.slice(-200).trim();
 }
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log('Chat API server running on port', PORT, '(clean sentence streaming)');
+  console.log('Chat API server running on port', PORT);
 });

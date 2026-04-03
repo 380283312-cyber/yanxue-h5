@@ -13,9 +13,19 @@ interface ReportPosterCanvasProps {
   date: string;
   bgType?: "palace" | "mountain";
   reportSummary?: string;
-  /**  图片生成完毕后回调，传入 dataURL，不再自动下载 */
+  /**  图片生成完毕后回调，传入 dataURL */
   onDataUrlReady?: (dataUrl: string) => void;
 }
+
+const W = 600;
+const GOLD = "#C9A84C";
+const DEEP_BLUE = "#1a2a4a";
+const DARK_BROWN = "#3d2b1f";
+const SOFT_TEAL = "#4A9E8B";
+const LIGHT_BG = "#faf8f4";
+const LINE_H = 22;
+const CARD_X = 30;
+const CARD_W = W - CARD_X * 2;
 
 export default function ReportPosterCanvas({
   url,
@@ -32,292 +42,298 @@ export default function ReportPosterCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
 
-    // ─── Layout constants ───────────────────────────────────────────────
-    const W = 600;
-    const PADDING = 40;
-    const QR_SIZE = 110;
-    const CARD_R = 12;
-    const LINE_H = 22;
+    // ─── Draw rounded rect ──────────────────────────────────────────
+    function rr(x: number, y: number, w: number, h: number, r: number) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
 
-    // Colors
-    const GOLD = "#C9A84C";
-    const DEEP_BLUE = "#1a2a4a";
-    const DARK_BROWN = "#3d2b1f";
-    const SOFT_TEAL = "#4A9E8B";
-    const LIGHT_BG = "#faf8f4";
+    // ─── Wrap Chinese text into lines ──────────────────────────────
+    function wrap(text: string, maxChars: number): string[] {
+      const out: string[] = [];
+      const paras = text.split("\n");
+      for (const p of paras) {
+        if (!p.trim()) { out.push(""); continue; }
+        const s = p.replace(/\s+/g, " ").trim();
+        let i = 0;
+        while (i < s.length) {
+          out.push(s.slice(i, i + maxChars));
+          i += maxChars;
+        }
+      }
+      return out;
+    }
 
-    // ─── Pre-compute layout ────────────────────────────────────────────
-    const REPORT_CARD_H = 280;
-    const QR_CARD_H = 210;
-    const BOTTOM_BAND_H = 50;
+    // ─── Build summary (max 8 lines) ───────────────────────────────
+    const SUMMARY_HEAD_H = 40;
+    const SUMMARY_MAX_LINES = 20;
+    const INNER_PAD = 20;
+    const availW = CARD_W - INNER_PAD * 2;
+    const summaryLines = reportSummary ? wrap(reportSummary, Math.floor(availW / 11)) : [];
+    const clippedLines = summaryLines.slice(0, SUMMARY_MAX_LINES);
+    const summaryBlockH = clippedLines.length * LINE_H + (clippedLines.length > 1 ? (clippedLines.length - 1) * 4 : 0);
+    const SUMMARY_CARD_H = SUMMARY_HEAD_H + summaryBlockH + INNER_PAD;
 
-    const TOP_AREA_H = 430;
-    const REPORT_AREA_H = reportSummary ? REPORT_CARD_H + 20 : 0;
-    const BOTTOM_AREA_H = QR_CARD_H + BOTTOM_BAND_H + 20;
+    // ─── Layout heights ──────────────────────────────────────────────
+    const TOP_H = 200;
+    const INFO_H = 115;
+    const BASE_H = 120;
+    const SUMMARY_H = reportSummary ? SUMMARY_CARD_H + 15 : 0;
+    const QR_H = 200;
+    const BAND_H = 48;
+    const GAP = 20;
 
-    const totalH = TOP_AREA_H + REPORT_AREA_H + BOTTOM_AREA_H;
+    const totalH =
+      TOP_H + INFO_H + BASE_H + SUMMARY_H +
+      QR_H + BAND_H + GAP + 20;
 
     canvas.width = W;
     canvas.height = totalH;
 
-    // ─── Background: warm gradient ─────────────────────────────────────
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, totalH);
-    bgGrad.addColorStop(0, "#faf6ee");
-    bgGrad.addColorStop(0.4, "#f5f0e8");
-    bgGrad.addColorStop(1, "#ede8df");
-    ctx.fillStyle = bgGrad;
+    // ─── Background ─────────────────────────────────────────────────
+    const g = ctx.createLinearGradient(0, 0, 0, totalH);
+    g.addColorStop(0, "#faf6ee");
+    g.addColorStop(0.5, "#f5f0e8");
+    g.addColorStop(1, "#ede8df");
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, totalH);
 
-    // Paper texture dots
-    ctx.fillStyle = "rgba(160,140,100,0.06)";
-    for (let i = 0; i < 80; i++) {
-      const dx = (i * 137) % W;
-      const dy = (i * 79) % totalH;
+    // Texture dots
+    ctx.fillStyle = "rgba(160,140,100,0.05)";
+    for (let i = 0; i < 60; i++) {
       ctx.beginPath();
-      ctx.arc(dx, dy, 1.2, 0, Math.PI * 2);
+      ctx.arc((i * 137) % W, (i * 79) % totalH, 1.2, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Top band
+    // Top bands
     ctx.fillStyle = DEEP_BLUE;
-    ctx.fillRect(0, 0, W, 8);
+    ctx.fillRect(0, 0, W, 6);
     ctx.fillStyle = GOLD;
-    ctx.fillRect(0, 8, W, 2);
+    ctx.fillRect(0, 6, W, 2);
 
-    // ─── Helper: draw rounded rect ──────────────────────────────────────
-    function roundRect(x: number, y: number, w: number, h: number, r: number) {
-      const c = ctx!;
-      c.beginPath();
-      c.moveTo(x + r, y);
-      c.lineTo(x + w - r, y);
-      c.quadraticCurveTo(x + w, y, x + w, y + r);
-      c.lineTo(x + w, y + h - r);
-      c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      c.lineTo(x + r, y + h);
-      c.quadraticCurveTo(x, y + h, x, y + h - r);
-      c.lineTo(x, y + r);
-      c.quadraticCurveTo(x, y, x + r, y);
-      c.closePath();
-    }
-
-    // ─── Title ─────────────────────────────────────────────────────────
+    // ─── Title ──────────────────────────────────────────────────────
+    let y = 42;
     ctx.textAlign = "center";
     ctx.fillStyle = GOLD;
-    ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.fillText("· 研学结业纪念 ·", W / 2, 46);
+    ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText("· 研学结业纪念 ·", W / 2, y);
 
-    ctx.strokeStyle = "rgba(201,168,76,0.4)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(201,168,76,0.35)";
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
-    ctx.moveTo(W / 2 - 90, 56);
-    ctx.lineTo(W / 2 + 90, 56);
+    ctx.moveTo(W / 2 - 80, y + 10);
+    ctx.lineTo(W / 2 + 80, y + 10);
     ctx.stroke();
 
+    y += 42;
     ctx.fillStyle = DEEP_BLUE;
-    ctx.font = "bold 46px -apple-system, BlinkMacSystemFont, 'STKaiti', 'KaiTi', serif";
-    ctx.fillText("探索之旅", W / 2, 112);
+    ctx.font = "bold 40px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
+    ctx.fillText("探索之旅", W / 2, y);
 
+    y += 28;
     ctx.fillStyle = "#8a7a6a";
-    ctx.font = "20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.fillText("研学成长记录", W / 2, 148);
+    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText("研学成长记录", W / 2, y);
 
     if (date) {
+      y += 22;
       ctx.fillStyle = "#bbb";
-      ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-      ctx.fillText(date, W / 2, 180);
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+      ctx.fillText(date, W / 2, y);
     }
 
-    // ─── Student info ───────────────────────────────────────────────────
-    const infoY = 210;
+    // ─── Student info ───────────────────────────────────────────────
+    y = TOP_H;
     ctx.textAlign = "center";
 
+    // Name: 30px (reduced from 40px)
     ctx.fillStyle = DARK_BROWN;
-    ctx.font = "bold 40px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
-    ctx.fillText(studentName || "同学", W / 2, infoY + 40);
+    ctx.font = "bold 30px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
+    ctx.fillText(studentName || "同学", W / 2, y + 34);
 
+    // Gold dot
     ctx.fillStyle = GOLD;
     ctx.beginPath();
-    ctx.arc(W / 2, infoY + 56, 4, 0, Math.PI * 2);
+    ctx.arc(W / 2, y + 48, 3.5, 0, Math.PI * 2);
     ctx.fill();
 
+    y += 66;
     ctx.fillStyle = "#6b5a4a";
-    ctx.font = "16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    const schoolText = [school, grade].filter(Boolean).join(" · ");
-    ctx.fillText(schoolText || "—", W / 2, infoY + 84);
+    ctx.font = "15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText([school, grade].filter(Boolean).join("  ·  ") || "—", W / 2, y);
 
+    // Separator
+    y += 18;
     ctx.strokeStyle = "rgba(201,168,76,0.3)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(70, infoY + 108);
-    ctx.lineTo(W - 70, infoY + 108);
+    ctx.moveTo(60, y);
+    ctx.lineTo(W - 60, y);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ─── Base & Theme ──────────────────────────────────────────────────
-    const baseY = infoY + 120;
+    // ─── Base & theme ───────────────────────────────────────────────
+    y += 26;
     ctx.textAlign = "center";
-
     ctx.fillStyle = GOLD;
     ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.fillText("研学基地", W / 2, baseY);
+    ctx.fillText("研学基地", W / 2, y);
 
+    y += 22;
     ctx.fillStyle = DEEP_BLUE;
-    ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
-    ctx.fillText(base || "—", W / 2, baseY + 32);
+    ctx.font = "bold 24px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
+    ctx.fillText(base || "—", W / 2, y);
 
+    y += 26;
     ctx.fillStyle = "rgba(61,43,31,0.5)";
-    ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    ctx.fillText("研学主题", W / 2, baseY + 60);
+    ctx.font = "12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText("研学主题", W / 2, y);
 
+    y += 20;
     ctx.fillStyle = DARK_BROWN;
-    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-    const themeDisplay = theme.length > 35 ? theme.substring(0, 35) + "…" : (theme || "—");
-    ctx.fillText(themeDisplay, W / 2, baseY + 84);
+    ctx.font = "16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+    ctx.fillText(theme.length > 32 ? theme.slice(0, 32) + "…" : (theme || "—"), W / 2, y);
 
-    // ─── Report summary card ────────────────────────────────────────────
-    let contentY = baseY + 100;
-
+    // ─── Summary card ───────────────────────────────────────────────
     if (reportSummary) {
-      const cardX = 30;
-      const cardW = W - 60;
-      const cardH = REPORT_CARD_H;
+      y += 20;
+      const cH = SUMMARY_CARD_H;
 
-      ctx.fillStyle = "rgba(0,0,0,0.06)";
-      roundRect(cardX + 3, contentY + 3, cardW, cardH, CARD_R);
+      ctx.fillStyle = "rgba(0,0,0,0.05)";
+      rr(CARD_X + 2, y + 2, CARD_W, cH, 12);
       ctx.fill();
 
       ctx.fillStyle = LIGHT_BG;
-      roundRect(cardX, contentY, cardW, cardH, CARD_R);
+      rr(CARD_X, y, CARD_W, cH, 12);
       ctx.fill();
 
       ctx.fillStyle = GOLD;
-      roundRect(cardX, contentY, cardW, 3, CARD_R);
+      rr(CARD_X, y, CARD_W, 3, 12);
       ctx.fill();
 
+      // Label
       ctx.textAlign = "left";
       ctx.fillStyle = GOLD;
       ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-      ctx.fillText("研学记录摘要", cardX + 16, contentY + 22);
+      ctx.fillText("研学记录摘要", CARD_X + 16, y + 20);
 
-      ctx.strokeStyle = "rgba(201,168,76,0.25)";
+      // Separator
+      ctx.strokeStyle = "rgba(201,168,76,0.2)";
       ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.moveTo(cardX + 16, contentY + 30);
-      ctx.lineTo(cardX + cardW - 16, contentY + 30);
+      ctx.moveTo(CARD_X + 16, y + 28);
+      ctx.lineTo(CARD_X + CARD_W - 16, y + 28);
       ctx.stroke();
 
+      // Text lines
       ctx.fillStyle = "#4a3a2a";
       ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-      const textMaxW = cardW - 32;
-      const truncatedSummary = reportSummary.length > 350
-        ? reportSummary.substring(0, 350) + "…"
-        : reportSummary;
-
-      const chars = Math.floor(textMaxW / 13);
-      const paragraphs = truncatedSummary.split("\n");
-      let cy = contentY + 48;
-      for (const para of paragraphs) {
-        if (para.trim() === "") { cy += 6; continue; }
-        const words = para.split(/([\s\u200b]+)/);
-        let row = "";
-        for (const w of words) {
-          if ((row + w).length > chars) {
-            ctx.fillText(row.trim(), cardX + 16, cy);
-            cy += LINE_H;
-            row = w;
-          } else {
-            row += w;
-          }
-        }
-        if (row.trim()) { ctx.fillText(row.trim(), cardX + 16, cy); cy += LINE_H; }
+      let ty = y + 46;
+      for (let i = 0; i < clippedLines.length; i++) {
+        ctx.fillText(clippedLines[i], CARD_X + 16, ty);
+        ty += LINE_H;
+        if (i < clippedLines.length - 1) ty += 4;
       }
 
-      contentY += cardH + 20;
+      // Truncation hint
+      if (summaryLines.length > SUMMARY_MAX_LINES) {
+        ctx.fillStyle = "rgba(74,58,42,0.35)";
+        ctx.font = "12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("…", CARD_X + 16, ty + 4);
+      }
+
+      y += cH + 15;
+    } else {
+      y += 20;
     }
 
-    // ─── QR card ─────────────────────────────────────────────────────
-    const qrCardX = 50;
-    const qrCardW = W - 100;
-    const qrCardY = contentY;
-    const qrCardH = QR_CARD_H;
+    // ─── QR card ───────────────────────────────────────────────────
+    const qx = 50;
+    const qw = W - 100;
+    const qSize = 95;
+    const qLeft = qx + (qw - qSize) / 2;
 
-    ctx.fillStyle = "rgba(0,0,0,0.06)";
-    roundRect(qrCardX + 3, qrCardY + 3, qrCardW, qrCardH, 14);
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    rr(qx + 2, y + 2, qw, QR_H, 14);
     ctx.fill();
 
     ctx.fillStyle = "#ffffff";
-    roundRect(qrCardX, qrCardY, qrCardW, qrCardH, 14);
+    rr(qx, y, qw, QR_H, 14);
     ctx.fill();
 
     ctx.fillStyle = GOLD;
-    roundRect(qrCardX, qrCardY, qrCardW, 4, 14);
+    rr(qx, y, qw, 4, 14);
     ctx.fill();
 
-    const qrX = qrCardX + (qrCardW - QR_SIZE) / 2;
-    const qrY = qrCardY + 18;
-
-    // ─── Async QR code + finalize ──────────────────────────────────────
+    // ─── Async QR code ───────────────────────────────────────────────
     QRCode.toDataURL(url, {
-      width: QR_SIZE,
+      width: qSize,
       margin: 2,
       color: { dark: DEEP_BLUE, light: "#ffffff" },
     }).then((dataUrl) => {
       const img = new Image();
       img.onload = () => {
-        ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE);
+        ctx.drawImage(img, qLeft, y + 16, qSize, qSize);
 
-        // QR corner decorations
+        // QR corner brackets
         ctx.strokeStyle = SOFT_TEAL;
         ctx.lineWidth = 2.5;
         ctx.lineCap = "round";
-        const cs = 9;
-        ctx.beginPath(); ctx.moveTo(qrX, qrY + cs); ctx.lineTo(qrX, qrY); ctx.lineTo(qrX + cs, qrY); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(qrX + QR_SIZE - cs, qrY); ctx.lineTo(qrX + QR_SIZE, qrY); ctx.lineTo(qrX + QR_SIZE, qrY + cs); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(qrX, qrY + QR_SIZE - cs); ctx.lineTo(qrX, qrY + QR_SIZE); ctx.lineTo(qrX + cs, qrY + QR_SIZE); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(qrX + QR_SIZE - cs, qrY + QR_SIZE); ctx.lineTo(qrX + QR_SIZE, qrY + QR_SIZE); ctx.lineTo(qrX + QR_SIZE, qrY + QR_SIZE - cs); ctx.stroke();
+        const cs = 8;
+        const qx2 = qLeft, qy2 = y + 16, qs = qSize;
+        ctx.beginPath(); ctx.moveTo(qx2, qy2 + cs); ctx.lineTo(qx2, qy2); ctx.lineTo(qx2 + cs, qy2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qx2 + qs - cs, qy2); ctx.lineTo(qx2 + qs, qy2); ctx.lineTo(qx2 + qs, qy2 + cs); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qx2, qy2 + qs - cs); ctx.lineTo(qx2, qy2 + qs); ctx.lineTo(qx2 + cs, qy2 + qs); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(qx2 + qs - cs, qy2 + qs); ctx.lineTo(qx2 + qs, qy2 + qs); ctx.lineTo(qx2 + qs, qy2 + qs - cs); ctx.stroke();
 
-        // Text below QR
-        ctx.fillStyle = DARK_BROWN;
-        ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        // Below QR
         ctx.textAlign = "center";
-        ctx.fillText("长按识别二维码", W / 2, qrY + QR_SIZE + 22);
+        ctx.fillStyle = DARK_BROWN;
+        ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("长按识别二维码", W / 2, y + 16 + qSize + 20);
 
         ctx.fillStyle = SOFT_TEAL;
+        ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("免费生成你的研学报告", W / 2, y + 16 + qSize + 38);
+
+        ctx.fillStyle = DEEP_BLUE;
         ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.fillText("免费生成你的研学报告", W / 2, qrY + QR_SIZE + 40);
+        ctx.fillText("www.woaiyanxue.cn", W / 2, y + 16 + qSize + 56);
 
+        // Bottom band
+        const bY = y + QR_H + GAP;
         ctx.fillStyle = DEEP_BLUE;
-        ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.fillText("www.woaiyanxue.cn", W / 2, qrY + QR_SIZE + 58);
-
-        // ─── Bottom slogan band ─────────────────────────────────────────
-        const bottomY = qrCardY + qrCardH + 16;
-        ctx.fillStyle = DEEP_BLUE;
-        roundRect(35, bottomY, W - 70, BOTTOM_BAND_H - 6, 10);
+        rr(35, bY, W - 70, BAND_H, 10);
         ctx.fill();
 
         ctx.fillStyle = GOLD;
-        ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-        ctx.fillText("让每一次探索，都留下成长印记", W / 2, bottomY + (BOTTOM_BAND_H - 6) / 2 + 5);
+        ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
+        ctx.fillText("让每一次探索，都留下成长印记", W / 2, bY + BAND_H / 2 + 5);
 
         // Bottom gold line
         ctx.fillStyle = GOLD;
         ctx.fillRect(0, totalH - 3, W, 3);
 
-        // ─── All drawing done: expose dataURL (no auto-download) ───────
-        if (onDataUrlReady) {
-          onDataUrlReady(canvas.toDataURL("image/png"));
-        }
+        // Expose dataURL
+        if (onDataUrlReady) onDataUrlReady(canvas.toDataURL("image/png"));
       };
       img.src = dataUrl;
     }).catch((err) => {
-      console.error("QRCode generation failed:", err);
+      console.error("QRCode failed:", err);
     });
   }, [url, studentName, school, grade, base, theme, date, bgType, reportSummary, onDataUrlReady]);
 

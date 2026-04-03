@@ -100,7 +100,7 @@ export default function ShareModal({
       >
         <div className="share-modal">
           <h3 className="share-modal-title">
-            {posterDataUrl ? "预览纪念卡" : "分享给好友"}
+            {posterDataUrl ? "预览纪念卡" : "分享 / 生成纪念卡"}
           </h3>
 
           {/* ── 预览模式 ─────────────────────────────────────── */}
@@ -258,6 +258,44 @@ export default function ShareModal({
                 </div>
               )}
 
+              {/* Web Share API (支持 iOS/Android 浏览器原生分享) */}
+              {!generating && navigator.share && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.share({
+                        title: "研学AI助手",
+                        text: "🎓 帮学校5秒生成研学方案！帮家长生成研学报告！完全免费",
+                        url: SHARE_URL,
+                      });
+                    } catch (e) {
+                      // 用户取消分享，不做任何处理
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    background: "linear-gradient(135deg, #07c160, #06a855)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "12px",
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    marginBottom: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 12a8 8 0 0 0-7.8 6.1l-4.9 2.6c-.5.3-1.3.1-1.6-.4-.1-.2-.1-.3-.1-.5 0-.2 0-.4.1-.5l.4-.8c.1-.1.2-.2.4-.2h.1c.1 0 .3.1.4.2l3.3 2.3c.5.3.4.8-.1 1l-4.9 2.6c-.5.3-1.2.1-1.5-.4l-.1-.2c-.1-.3 0-.6.2-.8l5-6c.4-.5 1.1-.5 1.5-.1l.6.6c.1.1.1.2.1.3s0 .2-.1.3l-.2.3c-.1.1-.2.2-.4.2h-.3c-.1 0-.3-.1-.3-.2l-.4-.5c-.1-.2-.1-.4 0-.5l.1-.2 1.7-2c.4-.5 1.1-.5 1.5-.1l.6.6c.1.1.1.2.1.3s0 .2-.1.3l-.2.3c-.1.1-.2.2-.4.2h-.3c-.1 0-.3-.1-.3-.2l-.4-.5c-.1-.2-.1-.4 0-.5l.1-.2 1.7-2c.4-.5 1.1-.5 1.5-.1l.6.6c.1.1.1.2.1.3s0 .2-.1.3l-.1.2c-.1.2-.2.3-.4.4h-.1c-.1 0-.2 0-.3-.1l-.4-.2-.3-.3c-.1-.1-.1-.2 0-.4l.1-.2 2.7-3.3c.3-.4 1-.5 1.4-.2l.3.3c.1.1.1.2.1.3s0 .2-.1.3l-.1.2c-.2.3-.5.5-.8.5z"/>
+                  </svg>
+                  📤 分享到微信/微博
+                </button>
+              )}
+
               {/* 主操作按钮 */}
               {!generating && (
                 <div className="share-primary-actions">
@@ -296,10 +334,18 @@ export default function ShareModal({
 
               {/* WeChat tip */}
               {!generating && (
-                <div className="share-wechat-tip">
-                  <span>在微信中直接打开本页面</span>
-                  <span className="share-wechat-tip-arrow">→</span>
-                  <span>点右上角 ··· 分享给朋友/朋友圈</span>
+                <div style={{
+                  background: "linear-gradient(135deg, #fef9e7, #fdf3d0)",
+                  border: "1px solid #f0d060",
+                  borderRadius: "10px",
+                  padding: "10px 14px",
+                  marginTop: "8px",
+                  fontSize: "12px",
+                  color: "#7a6010",
+                  lineHeight: "1.6",
+                }}>
+                  <strong>💡 在微信/朋友圈分享：</strong>点击右上角 <strong>···</strong> → 选择「发送给朋友」或「分享到朋友圈」<br/>
+                  <span style={{ fontSize: "11px", opacity: 0.7 }}>链接卡片由微信自动生成，无需额外操作</span>
                 </div>
               )}
             </>

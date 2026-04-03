@@ -168,7 +168,10 @@ export async function streamChatViaAPI({
   onDone,
   onError,
 }: ChatAPIOptions): Promise<void> {
-  const url = "/api/chat";
+  const baseUrl = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE
+    ? process.env.NEXT_PUBLIC_API_BASE
+    : '';
+  const url = `${baseUrl}/api/chat`;
 
   try {
     const response = await fetch(url, {

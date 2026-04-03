@@ -111,8 +111,6 @@ export default function HomePage() {
 
   // Share modal state
   const [shareVisible, setShareVisible] = useState(false);
-  const [posterType, setPosterType] = useState<"report" | "general">("report");
-  const [selectedBgType, setSelectedBgType] = useState<"palace" | "mountain">("palace");
   const openShare = useCallback(() => setShareVisible(true), []);
   const closeShare = useCallback(() => setShareVisible(false), []);
 
@@ -479,7 +477,15 @@ ${summary || "（用户未填写具体内容）"}
           fullResponse += text;
           setReportResult(fullResponse);
         },
-        onDone: () => setReportLoading(false),
+        onDone: () => {
+          setReportLoading(false);
+          router.push(
+            `/report?data=${btoa(JSON.stringify({
+              name: `${reportForm.name}的研学报告`,
+              content: fullResponse,
+            }))}`
+          );
+        },
         onError: (err: Error) => {
           fullResponse = FRIENDLY_ERROR_MESSAGE;
           setReportResult(fullResponse);
@@ -500,18 +506,6 @@ ${summary || "（用户未填写具体内容）"}
       <ShareModal
         visible={shareVisible}
         onClose={closeShare}
-        posterType={posterType}
-        bgType={selectedBgType}
-        onBgTypeChange={setSelectedBgType}
-        reportData={{
-          studentName: reportForm.name,
-          school: reportForm.school,
-          grade: reportForm.grade,
-          base: reportForm.base,
-          theme: reportForm.theme,
-          date: reportForm.date,
-        }}
-        reportSummary={reportResult}
       />
       <PaywallModal
         visible={paywallVisible}
@@ -790,15 +784,15 @@ ${summary || "（用户未填写具体内容）"}
                     <div className="template-tags">
                       <button
                         className="template-tag"
-                        onClick={() => { setPosterType("general"); openShare(); }}
+                        onClick={openShare}
                       >
-                        🗺️ 生成纪念卡
+                        🗺️ 分享链接
                       </button>
                       <button
                         className="template-tag tag-share"
-                        onClick={() => { setPosterType("general"); openShare(); }}
+                        onClick={openShare}
                       >
-                        ↗ 分享链接
+                        ↗ 更多分享
                       </button>
                       <button
                         className="back-btn"
@@ -1004,15 +998,15 @@ ${summary || "（用户未填写具体内容）"}
                     <div className="template-tags">
                       <button
                         className="template-tag"
-                        onClick={() => { setPosterType("report"); openShare(); }}
+                        onClick={openShare}
                       >
-                        🏛️ 生成纪念卡
+                        🏛️ 分享链接
                       </button>
                       <button
                         className="template-tag tag-share"
-                        onClick={() => { setPosterType("general"); openShare(); }}
+                        onClick={openShare}
                       >
-                        ↗ 分享链接
+                        ↗ 更多分享
                       </button>
                       <button
                         className="back-btn"

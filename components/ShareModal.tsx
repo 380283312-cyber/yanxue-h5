@@ -1,24 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import PosterCanvas from "./PosterCanvas";
-import ReportPosterCanvas from "./ReportPosterCanvas";
 
 interface ShareModalProps {
   visible: boolean;
   onClose: () => void;
-  posterType?: "report" | "general";
-  bgType?: "palace" | "mountain";
-  onBgTypeChange?: (bg: "palace" | "mountain") => void;
-  reportData?: {
-    studentName: string;
-    school: string;
-    grade: string;
-    base: string;
-    theme: string;
-    date: string;
-  };
-  reportSummary?: string;
 }
 
 const SHARE_URL = "https://www.woaiyanxue.cn";
@@ -26,17 +12,9 @@ const SHARE_URL = "https://www.woaiyanxue.cn";
 export default function ShareModal({
   visible,
   onClose,
-  posterType = "general",
-  bgType = "palace",
-  onBgTypeChange,
-  reportData,
-  reportSummary,
 }: ShareModalProps) {
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
-  const [posterKey, setPosterKey] = useState(0);
-  const [generating, setGenerating] = useState(false);
-  const [posterDataUrl, setPosterDataUrl] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -54,24 +32,6 @@ export default function ShareModal({
     }
   };
 
-  const handleGeneratePoster = () => {
-    setPosterDataUrl(null);
-    setGenerating(true);
-    setPosterKey((k) => k + 1);
-    showToast(posterType === "report" ? "研学纪念卡生成中..." : "海报生成中...");
-  };
-
-  const handleSavePoster = () => {
-    if (!posterDataUrl) return;
-    const a = document.createElement("a");
-    a.href = posterDataUrl;
-    a.download = "研学结业纪念卡.png";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast("已保存到相册");
-  };
-
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -81,11 +41,6 @@ export default function ShareModal({
     }
     return () => document.removeEventListener("keydown", handleEsc);
   }, [visible, onClose]);
-
-  const THUMBNAILS = {
-    palace: "/bg-palace-thumb.jpg",
-    mountain: "/bg-yellow-mountain-thumb.jpg",
-  };
 
   return (
     <>
@@ -99,288 +54,66 @@ export default function ShareModal({
         aria-label="分享"
       >
         <div className="share-modal">
-          <h3 className="share-modal-title">
-            {posterDataUrl ? "预览纪念卡" : "分享 / 生成纪念卡"}
-          </h3>
+          <h3 className="share-modal-title">分享研学助手</h3>
 
-          {/* ── 预览模式 ─────────────────────────────────────── */}
-          {posterDataUrl && posterType === "report" ? (
-            <div style={{ marginBottom: "12px" }}>
-              <div style={{
-                border: "2px solid #C9A84C",
-                borderRadius: "12px",
-                overflow: "hidden",
-                maxHeight: "480px",
-                overflowY: "auto",
-                background: "#faf6ee",
-              }}>
-                <img
-                  src={posterDataUrl}
-                  alt="研学纪念卡预览"
-                  style={{ width: "100%", display: "block" }}
-                />
-              </div>
-              <p style={{ fontSize: "12px", color: "#999", textAlign: "center", margin: "8px 0 12px" }}>
-                长按图片可直接保存到相册
-              </p>
-              <button
-                onClick={handleSavePoster}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  background: "linear-gradient(135deg, #C9A84C, #e8c96a)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "12px",
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  marginBottom: "8px",
-                }}
-              >
-                📥 保存到相册
-              </button>
-              <button
-                onClick={() => { setPosterDataUrl(null); setGenerating(false); }}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  background: "#f5f5f5",
-                  color: "#666",
-                  border: "none",
-                  borderRadius: "10px",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
-              >
-                ← 重新生成
-              </button>
+          <div className="share-card-preview">
+            <div className="share-card-preview-title">🎓 研学AI助手</div>
+            <div style={{ fontSize: "13px", color: "#fff", lineHeight: "1.7" }}>
+              帮学校5秒生成研学方案 · 帮家长生成研学报告<br />
+              完全免费，立即体验
             </div>
-          ) : (
-            <>
-              {/* ── 生成阶段：背景选择 ─────────────────────────── */}
-              {posterType === "report" && !generating && (
-                <div style={{ marginBottom: "12px" }}>
-                  <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px", textAlign: "center" }}>
-                    选择海报背景
-                  </div>
-                  <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-                    {(["palace", "mountain"] as const).map((bg) => (
-                      <button
-                        key={bg}
-                        onClick={() => onBgTypeChange?.(bg)}
-                        style={{
-                          border: bgType === bg ? "2px solid #C9A84C" : "2px solid #e0e0e0",
-                          borderRadius: "10px",
-                          padding: "6px",
-                          background: "#fafafa",
-                          cursor: "pointer",
-                          width: "120px",
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <img
-                          src={THUMBNAILS[bg]}
-                          alt={bg === "palace" ? "古典信纸" : "现代信纸"}
-                          style={{
-                            width: "100%",
-                            height: "70px",
-                            objectFit: "cover",
-                            borderRadius: "6px",
-                            display: "block",
-                            background: "#e8e4dc",
-                          }}
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
-                        <div style={{
-                          fontSize: "11px",
-                          color: bgType === bg ? "#C9A84C" : "#666",
-                          marginTop: "4px",
-                          fontWeight: bgType === bg ? "bold" : "normal",
-                        }}>
-                          {bg === "palace" ? "📜 古典信纸" : "📋 现代信纸"}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "8px" }}>
+              {SHARE_URL}
+            </div>
+          </div>
 
-          {/* 生成中提示（posterDataUrl 未准备好） */}
-          {generating && (
-                <div style={{
-                  textAlign: "center",
-                  padding: "24px",
-                  color: "#666",
-                  fontSize: "14px",
-                }}>
-                  <div className="spinner" style={{
-                    borderTopColor: "#C9A84C",
-                    borderColor: "rgba(201,168,76,0.3)",
-                    width: "32px",
-                    height: "32px",
-                    margin: "0 auto 12px",
-                  }} />
-                  正在生成纪念卡，请稍候…
-                </div>
-              )}
-
-              {/* Link card (非预览模式) */}
-              {!generating && (
-                <div className="share-card-preview" style={{
-                  background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)"
-                }}>
-                  <div className="share-card-preview-title" style={{
-                    fontSize: "16px",
-                    fontWeight: "800",
-                    color: "#fff",
-                    lineHeight: "1.5",
-                    marginBottom: "8px"
-                  }}>
-                    🎓 研学AI助手
-                  </div>
-                  <div style={{
-                    background: "rgba(1,195,163,0.15)",
-                    border: "1px solid rgba(1,195,163,0.3)",
-                    borderRadius: "10px",
-                    padding: "10px 12px",
-                    marginBottom: "10px"
-                  }}>
-                    <div style={{ fontSize: "13px", color: "#fff", lineHeight: "1.7", fontWeight: "500" }}>
-                      ✈️ 帮学校 → 5秒生成研学方案/家长信<br />
-                      📄 帮家长 → 生成研学报告/研学证书<br />
-                      💰 完全免费
-                    </div>
-                  </div>
-                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>
-                    {SHARE_URL}
-                  </div>
-                </div>
-              )}
-
-              {/* Web Share API (支持 iOS/Android 浏览器原生分享) */}
-              {!generating && navigator.share && (
-                <button
-                  onClick={async () => {
-                    try {
-                      await navigator.share({
-                        title: "研学AI助手",
-                        text: "🎓 帮学校5秒生成研学方案！帮家长生成研学报告！完全免费",
-                        url: SHARE_URL,
-                      });
-                    } catch (e) {
-                      // 用户取消分享，不做任何处理
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg, #07c160, #06a855)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "12px",
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    marginBottom: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20 12a8 8 0 0 0-7.8 6.1l-4.9 2.6c-.5.3-1.3.1-1.6-.4-.1-.2-.1-.3-.1-.5 0-.2 0-.4.1-.5l.4-.8c.1-.1.2-.2.4-.2h.1c.1 0 .3.1.4.2l3.3 2.3c.5.3.4.8-.1 1l-4.9 2.6c-.5.3-1.2.1-1.5-.4l-.1-.2c-.1-.3 0-.6.2-.8l5-6c.4-.5 1.1-.5 1.5-.1l.6.6c.1.1.1.2.1.3s0 .2-.1.3l-.2.3c-.1.1-.2.2-.4.2h-.3c-.1 0-.3-.1-.3-.2l-.4-.5c-.1-.2-.1-.4 0-.5l.1-.2 1.7-2c.4-.5 1.1-.5 1.5-.1l.6.6c.1.1.1.2.1.3s0 .2-.1.3l-.2.3c-.1.1-.2.2-.4.2h-.3c-.1 0-.3-.1-.3-.2l-.4-.5c-.1-.2-.1-.4 0-.5l.1-.2 1.7-2c.4-.5 1.1-.5 1.5-.1l.6.6c.1.1.1.2.1.3s0 .2-.1.3l-.1.2c-.1.2-.2.3-.4.4h-.1c-.1 0-.2 0-.3-.1l-.4-.2-.3-.3c-.1-.1-.1-.2 0-.4l.1-.2 2.7-3.3c.3-.4 1-.5 1.4-.2l.3.3c.1.1.1.2.1.3s0 .2-.1.3l-.1.2c-.2.3-.5.5-.8.5z"/>
-                  </svg>
-                  📤 分享到微信/微博
-                </button>
-              )}
-
-              {/* 主操作按钮 */}
-              {!generating && (
-                <div className="share-primary-actions">
-                  {posterType === "report" && (
-                    <button
-                      className="share-primary-btn poster"
-                      onClick={handleGeneratePoster}
-                    >
-                      <div className="share-primary-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                          <path d="M3 9h18" />
-                          <path d="M9 21V9" />
-                        </svg>
-                      </div>
-                      <span className="share-primary-label">生成纪念卡</span>
-                      <span className="share-primary-sub">预览后再保存</span>
-                    </button>
-                  )}
-
-                  <button
-                    className="share-primary-btn copy"
-                    onClick={handleCopy}
-                  >
-                    <div className="share-primary-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                    </div>
-                    <span className="share-primary-label">复制链接</span>
-                    <span className="share-primary-sub">粘贴给好友</span>
-                  </button>
-                </div>
-              )}
-
-              {/* WeChat tip */}
-              {!generating && (
-                <div style={{
-                  background: "linear-gradient(135deg, #fef9e7, #fdf3d0)",
-                  border: "1px solid #f0d060",
-                  borderRadius: "10px",
-                  padding: "10px 14px",
-                  marginTop: "8px",
-                  fontSize: "12px",
-                  color: "#7a6010",
-                  lineHeight: "1.6",
-                }}>
-                  <strong>💡 在微信/朋友圈分享：</strong>点击右上角 <strong>···</strong> → 选择「发送给朋友」或「分享到朋友圈」<br/>
-                  <span style={{ fontSize: "11px", opacity: 0.7 }}>链接卡片由微信自动生成，无需额外操作</span>
-                </div>
-              )}
-            </>
-          )}
-
-          <button className="share-cancel-btn" onClick={onClose}>
-            取消
+          <button
+            onClick={handleCopy}
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "12px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              marginTop: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            复制链接
           </button>
+
+          <div style={{
+            background: "#f0fdf9",
+            border: "1px solid rgba(1,195,163,0.3)",
+            borderRadius: "10px",
+            padding: "10px 14px",
+            marginTop: "12px",
+            fontSize: "12px",
+            color: "#065f56",
+            lineHeight: "1.6",
+          }}>
+            💡 <strong>微信内分享：</strong>复制链接后粘贴给朋友<br />
+            📱 <strong>浏览器中打开：</strong>点分享按钮可直接发微信/朋友圈
+          </div>
+
+          <button className="share-cancel-btn" onClick={onClose}>关闭</button>
         </div>
       </div>
 
       <div className={`toast ${toastVisible ? "visible" : ""}`} role="status" aria-live="polite">
         {toast}
       </div>
-
-      {posterKey > 0 && posterType === "report" && reportData ? (
-        <ReportPosterCanvas
-          key={posterKey}
-          url={SHARE_URL}
-          studentName={reportData.studentName}
-          school={reportData.school}
-          grade={reportData.grade}
-          base={reportData.base}
-          theme={reportData.theme}
-          date={reportData.date}
-          bgType={bgType}
-          reportSummary={reportSummary}
-          onDataUrlReady={(dataUrl) => {
-            setPosterDataUrl(dataUrl);
-            setGenerating(false);
-          }}
-        />
-      ) : posterKey > 0 ? (
-        <PosterCanvas key={posterKey} url={SHARE_URL} />
-      ) : null}
     </>
   );
 }

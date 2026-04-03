@@ -7,6 +7,12 @@ const path = require("path");
 
 const outDir = path.join(__dirname, "..", "out");
 
+// 如果 out 目录不存在（说明没有用 static export），跳过
+if (!fs.existsSync(outDir)) {
+  console.log("📦 Post-build 完成：未使用静态导出，跳过子路由处理");
+  return;
+}
+
 // 查找所有 .html 文件（但不是 index.html 本身）
 const htmlFiles = fs.readdirSync(outDir).filter(
   (f) => f.endsWith(".html") && f !== "index.html" && f !== "404.html" && f !== "_not-found.html"

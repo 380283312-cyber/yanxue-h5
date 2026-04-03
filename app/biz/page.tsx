@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 import { streamChatDirect } from "@/lib/streamDirect";
+import { SchoolPosterModal, SchoolPosterProps } from "@/components/SchoolPosterCanvas";
 
 type BizType = "org" | "school";
 
@@ -14,6 +15,41 @@ export default function BizPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
   const [view, setView] = useState<"form" | "result">("form");
+  const [showPosterModal, setShowPosterModal] = useState(false);
+  const [posterProps, setPosterProps] = useState<SchoolPosterProps | null>(null);
+
+  const extractSchoolPosterInfo = (resultText: string): SchoolPosterProps => {
+    const getMatch = (pattern: RegExp, defaultValue: string): string => {
+      const match = resultText.match(pattern);
+      return match ? match[1].trim() : defaultValue;
+    };
+
+    const schoolName = getMatch(/学校名称：([^\n]+)/, schoolForm.name || "待填写");
+    const theme = getMatch(/活动主题：([^\n]+)/, schoolForm.theme || "待填写");
+    const date = getMatch(/活动时间：([^\n]+)/, "待填写");
+    const location = getMatch(/活动地点：([^\n]+)/, schoolForm.location || "待填写");
+    const grade = getMatch(/参与年级：([^\n]+)/, schoolForm.grade || "待填写");
+    const highlight1 = getMatch(/活动亮点1：([^\n]+)/, "精彩纷呈");
+    const highlight2 = getMatch(/活动亮点2：([^\n]+)/, "寓教于乐");
+    const highlight3 = getMatch(/活动亮点3：([^\n]+)/, "收获满满");
+    const contactInfo = getMatch(/联系方式：([^\n]+)/, "");
+
+    return {
+      schoolName,
+      theme,
+      date,
+      location,
+      grade,
+      highlights: [highlight1, highlight2, highlight3],
+      contactInfo: contactInfo || undefined,
+    };
+  };
+
+  const handleGeneratePoster = () => {
+    const props = extractSchoolPosterInfo(result);
+    setPosterProps(props);
+    setShowPosterModal(true);
+  };
 
   // Org form
   const [orgForm, setOrgForm] = useState({
@@ -93,7 +129,20 @@ export default function BizPage() {
 包含：风险识别、预防措施、应急处理流程、责任分工
 
 ---
-要求：符合学校规范，语言严谨专业，适合直接使用。`;
+要求：符合学校规范，语言严谨专业，适合直接使用。
+
+请在结果末尾按以下格式输出招募海报所需信息（请严格按此格式）：
+
+【海报信息】
+学校名称：${schoolForm.name}
+活动主题：${schoolForm.theme}
+活动时间：请根据活动时长生成，如"2025年X月X日-X日"或具体日期
+活动地点：${schoolForm.location || "待填写"}
+参与年级：${schoolForm.grade}
+活动亮点1：请从上述方案中提取1个最具吸引力的亮点（15字以内）
+活动亮点2：请从上述方案中提取1个最具吸引力的亮点（15字以内）
+活动亮点3：请从上述方案中提取1个最具吸引力的亮点（15字以内）
+联系方式：待填写`;
 
   const handleGenerate = async () => {
     const prompt = bizType === "org" ? buildOrgPrompt() : buildSchoolPrompt();
@@ -465,13 +514,40 @@ export default function BizPage() {
                 fontSize: "15px",
                 fontWeight: 700,
                 cursor: "pointer",
+                marginBottom: "12px",
               }}
             >
               📋 复制结果
             </button>
+
+            {bizType === "school" && !loading && (
+              <button
+                onClick={handleGeneratePoster}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: "linear-gradient(135deg, #01c3a3 0%, #01a383 100%)",
+                  border: "none",
+                  borderRadius: "16px",
+                  color: "white",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🖨️ 生成招募海报
+              </button>
+            )}
           </>
         )}
       </div>
+
+      {showPosterModal && posterProps && (
+        <SchoolPosterModal
+          props={posterProps}
+          onClose={() => setShowPosterModal(false)}
+        />
+      )}
 
       <style>{`
         @keyframes bounce {

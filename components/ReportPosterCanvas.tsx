@@ -13,6 +13,8 @@ interface ReportPosterCanvasProps {
   date: string;
   bgType?: "palace" | "mountain";
   reportSummary?: string;
+  /**  图片生成完毕后回调，传入 dataURL，不再自动下载 */
+  onDataUrlReady?: (dataUrl: string) => void;
 }
 
 export default function ReportPosterCanvas({
@@ -25,6 +27,7 @@ export default function ReportPosterCanvas({
   date,
   bgType = "palace",
   reportSummary,
+  onDataUrlReady,
 }: ReportPosterCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -49,18 +52,16 @@ export default function ReportPosterCanvas({
     const LIGHT_BG = "#faf8f4";
 
     // ─── Pre-compute layout ────────────────────────────────────────────
-    // If reportSummary is provided, we need more vertical space
     const REPORT_CARD_H = 280;
     const QR_CARD_H = 210;
     const BOTTOM_BAND_H = 50;
 
-    const TOP_AREA_H = 430; // header + student info + base/theme
+    const TOP_AREA_H = 430;
     const REPORT_AREA_H = reportSummary ? REPORT_CARD_H + 20 : 0;
     const BOTTOM_AREA_H = QR_CARD_H + BOTTOM_BAND_H + 20;
 
     const totalH = TOP_AREA_H + REPORT_AREA_H + BOTTOM_AREA_H;
 
-    // ─── Set canvas size FIRST ──────────────────────────────────────────
     canvas.width = W;
     canvas.height = totalH;
 
@@ -72,7 +73,7 @@ export default function ReportPosterCanvas({
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, totalH);
 
-    // Subtle paper texture dots
+    // Paper texture dots
     ctx.fillStyle = "rgba(160,140,100,0.06)";
     for (let i = 0; i < 80; i++) {
       const dx = (i * 137) % W;
@@ -104,7 +105,7 @@ export default function ReportPosterCanvas({
       c.closePath();
     }
 
-    // ─── Top band: title ────────────────────────────────────────────────
+    // ─── Title ─────────────────────────────────────────────────────────
     ctx.textAlign = "center";
     ctx.fillStyle = GOLD;
     ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
@@ -139,7 +140,6 @@ export default function ReportPosterCanvas({
     ctx.font = "bold 40px -apple-system, BlinkMacSystemFont, 'STKaiti', serif";
     ctx.fillText(studentName || "同学", W / 2, infoY + 40);
 
-    // Gold dot separator
     ctx.fillStyle = GOLD;
     ctx.beginPath();
     ctx.arc(W / 2, infoY + 56, 4, 0, Math.PI * 2);
@@ -150,7 +150,6 @@ export default function ReportPosterCanvas({
     const schoolText = [school, grade].filter(Boolean).join(" · ");
     ctx.fillText(schoolText || "—", W / 2, infoY + 84);
 
-    // Gold dashed line
     ctx.strokeStyle = "rgba(201,168,76,0.3)";
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 4]);
@@ -189,28 +188,23 @@ export default function ReportPosterCanvas({
       const cardW = W - 60;
       const cardH = REPORT_CARD_H;
 
-      // Shadow
       ctx.fillStyle = "rgba(0,0,0,0.06)";
       roundRect(cardX + 3, contentY + 3, cardW, cardH, CARD_R);
       ctx.fill();
 
-      // Card background
       ctx.fillStyle = LIGHT_BG;
       roundRect(cardX, contentY, cardW, cardH, CARD_R);
       ctx.fill();
 
-      // Gold top border
       ctx.fillStyle = GOLD;
       roundRect(cardX, contentY, cardW, 3, CARD_R);
       ctx.fill();
 
-      // Section label
       ctx.textAlign = "left";
       ctx.fillStyle = GOLD;
       ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
       ctx.fillText("研学记录摘要", cardX + 16, contentY + 22);
 
-      // Separator
       ctx.strokeStyle = "rgba(201,168,76,0.25)";
       ctx.lineWidth = 0.5;
       ctx.beginPath();
@@ -218,7 +212,6 @@ export default function ReportPosterCanvas({
       ctx.lineTo(cardX + cardW - 16, contentY + 30);
       ctx.stroke();
 
-      // Report text
       ctx.fillStyle = "#4a3a2a";
       ctx.font = "13px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
       const textMaxW = cardW - 32;
@@ -226,7 +219,6 @@ export default function ReportPosterCanvas({
         ? reportSummary.substring(0, 350) + "…"
         : reportSummary;
 
-      // Word-wrap
       const chars = Math.floor(textMaxW / 13);
       const paragraphs = truncatedSummary.split("\n");
       let cy = contentY + 48;
@@ -249,23 +241,20 @@ export default function ReportPosterCanvas({
       contentY += cardH + 20;
     }
 
-    // ─── QR card ───────────────────────────────────────────────────────
+    // ─── QR card ─────────────────────────────────────────────────────
     const qrCardX = 50;
     const qrCardW = W - 100;
     const qrCardY = contentY;
     const qrCardH = QR_CARD_H;
 
-    // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.06)";
     roundRect(qrCardX + 3, qrCardY + 3, qrCardW, qrCardH, 14);
     ctx.fill();
 
-    // Card
     ctx.fillStyle = "#ffffff";
     roundRect(qrCardX, qrCardY, qrCardW, qrCardH, 14);
     ctx.fill();
 
-    // Gold top
     ctx.fillStyle = GOLD;
     roundRect(qrCardX, qrCardY, qrCardW, 4, 14);
     ctx.fill();
@@ -273,7 +262,7 @@ export default function ReportPosterCanvas({
     const qrX = qrCardX + (qrCardW - QR_SIZE) / 2;
     const qrY = qrCardY + 18;
 
-    // QR code drawn after async load
+    // ─── Async QR code + finalize ──────────────────────────────────────
     QRCode.toDataURL(url, {
       width: QR_SIZE,
       margin: 2,
@@ -288,13 +277,9 @@ export default function ReportPosterCanvas({
         ctx.lineWidth = 2.5;
         ctx.lineCap = "round";
         const cs = 9;
-        // TL
         ctx.beginPath(); ctx.moveTo(qrX, qrY + cs); ctx.lineTo(qrX, qrY); ctx.lineTo(qrX + cs, qrY); ctx.stroke();
-        // TR
         ctx.beginPath(); ctx.moveTo(qrX + QR_SIZE - cs, qrY); ctx.lineTo(qrX + QR_SIZE, qrY); ctx.lineTo(qrX + QR_SIZE, qrY + cs); ctx.stroke();
-        // BL
         ctx.beginPath(); ctx.moveTo(qrX, qrY + QR_SIZE - cs); ctx.lineTo(qrX, qrY + QR_SIZE); ctx.lineTo(qrX + cs, qrY + QR_SIZE); ctx.stroke();
-        // BR
         ctx.beginPath(); ctx.moveTo(qrX + QR_SIZE - cs, qrY + QR_SIZE); ctx.lineTo(qrX + QR_SIZE, qrY + QR_SIZE); ctx.lineTo(qrX + QR_SIZE, qrY + QR_SIZE - cs); ctx.stroke();
 
         // Text below QR
@@ -325,21 +310,16 @@ export default function ReportPosterCanvas({
         ctx.fillStyle = GOLD;
         ctx.fillRect(0, totalH - 3, W, 3);
 
-        // ─── Trigger download ───────────────────────────────────────────
-        triggerDownload(canvas);
+        // ─── All drawing done: expose dataURL (no auto-download) ───────
+        if (onDataUrlReady) {
+          onDataUrlReady(canvas.toDataURL("image/png"));
+        }
       };
       img.src = dataUrl;
+    }).catch((err) => {
+      console.error("QRCode generation failed:", err);
     });
-  }, [url, studentName, school, grade, base, theme, date, bgType, reportSummary]);
+  }, [url, studentName, school, grade, base, theme, date, bgType, reportSummary, onDataUrlReady]);
 
   return <canvas ref={canvasRef} style={{ display: "none" }} aria-hidden="true" />;
-}
-
-function triggerDownload(canvas: HTMLCanvasElement) {
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "研学结业纪念卡.png";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
 }

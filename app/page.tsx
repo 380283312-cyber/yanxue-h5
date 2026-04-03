@@ -8,7 +8,9 @@ import ChatInput from "@/components/ChatInput";
 import ShareModal from "@/components/ShareModal";
 import PosterCanvas from "@/components/PosterCanvas";
 import ReportPosterCanvas from "@/components/ReportPosterCanvas";
+import PaywallModal from "@/components/PaywallModal";
 import { streamChatViaAPI, buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
+import { checkUsage, recordUsage, getRemaining } from "@/lib/useUsageTracker";
 
 // ─── Quick Prompts ──────────────────────────────────────────────────────────
 // 基于720条真实研学课程数据分析设计，贴合数据分布
@@ -111,6 +113,28 @@ export default function HomePage() {
   const openShare = useCallback(() => setShareVisible(true), []);
   const closeShare = useCallback(() => setShareVisible(false), []);
 
+  // Paywall modal state
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [paywallAction, setPaywallAction] = useState<"chat" | "itinerary" | "report">("chat");
+  const [freeRemaining, setFreeRemaining] = useState(getRemaining());
+
+  // Sync free remaining on mount/return
+  useEffect(() => {
+    setFreeRemaining(getRemaining());
+  }, [paywallVisible]); // refresh after paywall closes
+
+  const openPaywall = (action: "chat" | "itinerary" | "report") => {
+    setPaywallAction(action);
+    setPaywallVisible(true);
+  };
+
+  const handleUnlock = () => {
+    // In production: trigger payment flow here
+    // For now: just activate VIP in localStorage
+    localStorage.setItem("yanxue_vip", "1");
+    setFreeRemaining(999);
+  };
+
   // ─── Auto-scroll to bottom ─────────────────────────────────────────────────
 
   const scrollToBottom = useCallback(() => {
@@ -127,7 +151,15 @@ export default function HomePage() {
 
   const handleQuickPrompt = useCallback(
     async (prompt: string) => {
+      // 检查免费次数
+      const status = checkUsage();
+      if (!status.allowed) {
+        openPaywall("chat");
+        return;
+      }
       setShowWelcome(false);
+      recordUsage();
+      setFreeRemaining(Math.max(0, status.remaining - 1));
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
         role: "user",
@@ -206,7 +238,14 @@ export default function HomePage() {
 
   const handleChatSend = useCallback(
     async (text: string) => {
+      const status = checkUsage();
+      if (!status.allowed) {
+        openPaywall("chat");
+        return;
+      }
       setShowWelcome(false);
+      recordUsage();
+      setFreeRemaining(Math.max(0, status.remaining - 1));
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
         role: "user",
@@ -290,6 +329,14 @@ export default function HomePage() {
     const { destination, days, grade, interest } = itineraryForm;
     if (!destination.trim()) return;
 
+    const status = checkUsage();
+    if (!status.allowed) {
+      openPaywall("itinerary");
+      return;
+    }
+    recordUsage();
+    setFreeRemaining(Math.max(0, status.remaining - 1));
+
     setItineraryLoading(true);
     setItineraryResult("");
 
@@ -337,13 +384,21 @@ export default function HomePage() {
     const { name, school, grade, theme, date, location, summary } = reportForm;
     if (!name.trim() || !theme.trim()) return;
 
+    const status = checkUsage();
+    if (!status.allowed) {
+      openPaywall("report");
+      return;
+    }
+    recordUsage();
+    setFreeRemaining(Math.max(0, status.remaining - 1));
+
     setReportLoading(true);
     setReportResult("");
 
     try {
-      const prompt = `请帮我生成一份研学报告，基于以下信息：
+      const prompt = `请帮我生成一份让人眼前一亮的研学报告，基于以下真实信息：
 
-基本信息：
+【基本信息】
 - 姓名：${name}
 - 学校：${school || "（未填写）"}
 - 年级：${grade}
@@ -352,18 +407,65 @@ export default function HomePage() {
 - 时间：${date || "（未填写）"}
 - 地点：${location || "（未填写）"}
 
-研学概要（用户填写）：
+【研学概要】
 ${summary || "（用户未填写具体内容）"}
 
-请生成完整的研学报告，包含：
-1. 封面信息（姓名、学校、年级、研学主题、时间、地点）
-2. 研学概要（约300字总结）
-3. 详细记录（按天或按主题展开，包含具体活动、学习内容、收获）
-4. 收获与反思（学生的个人感悟）
-5. 评语区域（家长/老师评语模板）
-6. 精彩瞬间（预留照片位置，配简短说明）
+请按以下格式生成一份高质量研学报告，要求：数据充实、分段清晰、情感真实、适合分享展示：
 
-报告语言亲切专业，适合存档和展示。`;
+═══════════════════════════════
+🏛️ 【研学报告】${theme}
+═══════════════════════════════
+
+【📋 基本信息卡】
+姓名：${name} ｜ 学校：${school || "—"} ｜ 年级：${grade}
+研学基地：${reportForm.base} ｜ 时间：${date || "—"} ｜ 地点：${location || "—"}
+
+【📊 研学数据概览】（虚构但合理的数据）
+• 行走步数：约 12,000 步/天
+• 学习时长：约 4 小时/天
+• 参与活动：3-5 项
+• 覆盖知识领域：2-3 个学科
+• 综合评级：★★★★☆（四星优秀）
+
+【📝 研学概要】（约200字）
+（根据主题和基地，写一段真实感人的研学总结，体现学生的成长与收获）
+
+【📅 详细记录】
+第1天：
+⏰ 08:30-09:00｜抵达基地，开营仪式
+🎯 学习目标：了解基地历史与研学主题
+💡 精彩瞬间：（描述一个令人印象深刻的画面）
+🏆 今日收获：（用一句话总结）
+
+第2天：...（根据基地特点继续展开）
+
+【🌟 核心收获】
+• 知识层面：（结合基地主题，写2-3个具体知识点）
+• 能力层面：（写1-2个实际提升的能力）
+• 情感层面：（写一段真情实感的反思）
+
+【💪 成长评估】（雷达图文字版）
+• 历史素养：████████░░ 85%
+• 动手能力：██████████ 95%
+• 团队协作：███████░░░ 75%
+• 创新思维：████████░░ 80%
+• 文化自信：██████████ 98%
+
+【🏠 家长行动指南】
+✓ 回程后可以这样延续这次研学：
+  1. （具体可操作的亲子活动建议）
+  2. （与研学主题相关的延伸学习建议）
+  3. （推荐的相关纪录片/书籍）
+
+【📝 老师/家长评语模板】
+"这次研学让___深刻体验了___，在___方面表现突出。期待他在接下来的学习中继续保持这份热情与好奇心。"
+
+【🎓 结业证书】（装饰性文字）
+　本证书授予　${name}　同学
+　已完成「${theme}」研学课程
+　特此证明 ✨
+
+报告语言亲切专业，格式美观，适合打印存档和微信分享。`;
 
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
@@ -407,6 +509,12 @@ ${summary || "（用户未填写具体内容）"}
           date: reportForm.date,
         }}
         reportSummary={reportResult}
+      />
+      <PaywallModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        actionType={paywallAction}
+        onUnlock={handleUnlock}
       />
 
       {/* Tab Navigation */}
@@ -454,6 +562,10 @@ ${summary || "（用户未填写具体内容）"}
                     <br />
                     试试快捷问题，或直接输入你的需求吧！
                   </p>
+                  <div className="free-usage-badge">
+                    🎁 今日免费次数：<strong>{freeRemaining > 0 ? freeRemaining : 0}</strong> / 3
+                    {freeRemaining === 0 && <span style={{color:"#ff6b35",marginLeft:"6px"}}>（已用完）</span>}
+                  </div>
                   <div className="quick-prompts">
                     {QUICK_PROMPTS.map((qp) => (
                       <button

@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
 export default function ReportPage() {
   const router = useRouter();
   const [report, setReport] = useState<{ name: string; content: string } | null>(null);
@@ -38,23 +39,25 @@ export default function ReportPage() {
 
   if (!report) {
     return (
-      <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f5f5f5" }}>
         <p style={{ color: "#666" }}>加载中…</p>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#f5f5f5", display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#f5f5f5" }}>
       {/* 顶部导航 */}
       <div style={{
         background: "linear-gradient(135deg, #01c3a3 0%, #00a88a 100%)",
         color: "white",
         padding: "12px 16px",
+        paddingTop: "max(12px, env(safe-area-inset-top))",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         flexShrink: 0,
+        zIndex: 10,
       }}>
         <button
           onClick={() => router.back()}
@@ -71,8 +74,14 @@ export default function ReportPage() {
         </button>
       </div>
 
-      {/* 报告内容 - 可滚动 */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px", paddingBottom: "80px" }}>
+      {/* 报告内容 - 独立滚动区域 */}
+      <div style={{
+        flex: 1,
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        padding: "16px",
+        overscrollBehavior: "contain",
+      }}>
         <div style={{
           background: "white",
           borderRadius: "16px",
@@ -98,16 +107,14 @@ export default function ReportPage() {
 
       {/* 底部固定操作栏 */}
       <div style={{
-        position: "fixed",
-        bottom: "0",
-        left: "0",
-        right: "0",
         background: "white",
         padding: "12px 16px",
         paddingBottom: "max(12px, env(safe-area-inset-bottom))",
         boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
         display: "flex",
         gap: "10px",
+        flexShrink: 0,
+        zIndex: 10,
       }}>
         <button
           onClick={handleCopyContent}

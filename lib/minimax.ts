@@ -239,8 +239,8 @@ export async function streamChatViaAPI({
   }
 }
 
-export function buildSystemPrompt(): string {
-  return `你是"研学顾问小智"，一位专业、简洁的研学旅行顾问助手。
+export function buildSystemPrompt(query?: string): string {
+  const basePrompt = `你是"研学顾问小智"，一位专业、简洁的研学旅行顾问助手。
 
 【能力】课程推荐、行程规划、报告生成、费用估算
 
@@ -254,18 +254,47 @@ export function buildSystemPrompt(): string {
 最后附【费用预算】【行前清单】
 
 【报告格式】
-封面信息 → 研学概要（150字）→ 详细记录 → 收获反思 → 评语模板
+封面信息 → 研学概要（150字）→ 详细记录 → 收获反思 → 评语模板`;
 
-【知识库】从以下${courses.length}门真实课程中匹配参考，禁止编造课程名：
-${(() => {
-  const cats: Record<string, string[]> = {};
-  for (const c of courses) {
-    if (!cats[c.classify]) cats[c.classify] = [];
-    const fee = c.fee && c.fee !== "待定" ? c.fee : "待定";
-    cats[c.classify].push(`${c.name}(${fee})`);
+  if (!query) {
+    return `${basePrompt}\n\n【知识库】课程库暂无查询条件，如需推荐请提供城市、分类或主题词。`;
   }
-  const emoji: Record<string,string> = {"红色教育":"🔴","传统文化":"🟡","劳动实践":"🟢","自然生态":"🌿","国防科工":"🔵","国情教育":"🔷","其他":"⚪"};
-  return Object.entries(cats).map(([cat, list]) => `${emoji[cat]||"⚪"}${cat}(${list.length}门): ${list.slice(0,8).join(" / ")}`).join("\n")
-    + (Object.values(cats).some(l => l.length > 8) ? "\n（其余从略）" : "");
-})()}`;
+
+  const keywords = query.toLowerCase().split(/[\s,，、]+/).filter(Boolean);
+  const cityNames = ["北京", "上海", "广州", "深圳", "杭州", "南京", "西安", "成都", "重庆", "武汉", "长沙", "苏州", "厦门", "青岛", "大连", "沈阳", "哈尔滨", "长春", "郑州", "济南", "福州", "昆明", "贵阳", "太原", "合肥", "南昌", "石家庄", "兰州", "乌鲁木齐", "呼和浩特", "银川", "西宁", "拉萨", "海口", "三亚", "东莞", "佛山", "无锡", "常州", "徐州", "南通", "扬州", "盐城", "淮安", "连云港", "泰州", "镇江", "嘉兴", "湖州", "绍兴", "金华", "衢州", "舟山", "台州", "丽水", "芜湖", "蚌埠", "淮南", "马鞍山", "淮北", "铜陵", "安庆", "黄山", "滁州", "阜阳", "宿州", "六安", "亳州", "池州", "宣城", "洛阳", "开封", "平顶山", "安阳", "新乡", "焦作", "许昌", "漯河", "三门峡", "南阳", "商丘", "信阳", "周口", "驻马店", "济源", "襄阳", "宜昌", "黄石", "十堰", "荆州", "荆门", "鄂州", "孝感", "黄冈", "咸宁", "随州", "恩施", "仙桃", "潜江", "天门", "神农架"];
+  const classifyNames = ["红色教育", "传统文化", "劳动实践", "自然生态", "国防科工", "国情教育", "其他"];
+  
+  const matchedCourses = courses
+    .map((course) => {
+      let score = 0;
+      const searchText = `${course.name} ${course.classify} ${course.introduction || ""} ${course.target || ""}`.toLowerCase();
+      
+      for (const kw of keywords) {
+        if (cityNames.some(c => kw.includes(c) || c.includes(kw))) {
+          if (searchText.includes(kw)) score += 3;
+        } else if (classifyNames.some(c => kw.includes(c) || c.includes(kw))) {
+          if (course.classify.includes(kw)) score += 3;
+        } else {
+          if (searchText.includes(kw)) score += 1;
+        }
+      }
+      
+      return { course, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map((item) => item.course);
+
+  if (matchedCourses.length === 0) {
+    return `${basePrompt}\n\n【知识库】未找到匹配\"${query}\"的课程，可尝试其他城市、分类或主题词。`;
+  }
+
+  const emoji: Record<string, string> = { "红色教育": "🔴", "传统文化": "🟡", "劳动实践": "🟢", "自然生态": "🌿", "国防科工": "🔵", "国情教育": "🔷", "其他": "⚪" };
+  const courseList = matchedCourses.map(c => {
+    const fee = c.fee && c.fee !== "待定" ? c.fee : "待定";
+    return `${emoji[c.classify] || "⚪"}${c.classify}: ${c.name}(${fee})`;
+  }).join("\n");
+
+  return `${basePrompt}\n\n【知识库】根据\"${query}\"匹配到${matchedCourses.length}门相关课程（最多显示10门）:\n${courseList}\n\n禁止编造课程名，只能从以上课程中推荐。`;
 }

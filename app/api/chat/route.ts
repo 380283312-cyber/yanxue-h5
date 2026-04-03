@@ -30,9 +30,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const lastUserMessage = messages.filter(m => m.role === "user").pop();
+    const query = lastUserMessage?.content || "";
     const systemMessage: Message = {
       role: "user",
-      content: buildSystemPrompt(),
+      content: buildSystemPrompt(query),
     };
 
     const apiMessages: Message[] = [

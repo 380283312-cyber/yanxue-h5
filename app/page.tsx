@@ -479,11 +479,16 @@ ${summary || "（用户未填写具体内容）"}
         },
         onDone: () => {
           setReportLoading(false);
-          // 用 sessionStorage 传递报告（避免 URL 长度的限制）
           try {
             sessionStorage.setItem('yanxue_report', JSON.stringify({
               name: `${reportForm.name}的研学报告`,
               content: fullResponse,
+              studentName: reportForm.name,
+              school: reportForm.school,
+              grade: reportForm.grade,
+              base: reportForm.base,
+              theme: reportForm.theme,
+              date: reportForm.date,
             }));
           } catch {}
           router.push('/report');

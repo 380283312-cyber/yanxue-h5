@@ -10,8 +10,7 @@ import PosterCanvas from "@/components/PosterCanvas";
 import ReportPosterCanvas from "@/components/ReportPosterCanvas";
 import PaywallModal from "@/components/PaywallModal";
 import ItineraryShareSheet from "@/components/ItineraryShareSheet";
-import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
-import { streamChatDirect } from "@/lib/streamDirect";
+import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE, streamChatViaAPI } from "@/lib/minimax";
 import { checkUsage, recordUsage, getRemaining } from "@/lib/useUsageTracker";
 import { useChatStore } from "@/store/chatStore";
 import { useItineraryStore } from "@/store/itineraryStore";
@@ -196,7 +195,7 @@ export default function HomePage() {
 
         let fullResponse = "";
 
-        await streamChatDirect({
+        await streamChatViaAPI({
           messages: allMessages,
           onChunk: (text: string) => {
             fullResponse += text;
@@ -285,7 +284,7 @@ export default function HomePage() {
 
         let fullResponse = "";
 
-        await streamChatDirect({
+        await streamChatViaAPI({
           messages: allMessages,
           onChunk: (text: string) => {
             fullResponse += text;
@@ -362,7 +361,7 @@ export default function HomePage() {
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
 
-      await streamChatDirect({
+      await streamChatViaAPI({
         messages: [{ role: "user" as const, content: systemContent }, { role: "user" as const, content: prompt }],
         onChunk: (text: string) => {
           fullResponse += text;
@@ -475,7 +474,7 @@ ${summary || "（用户未填写具体内容）"}
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
 
-      await streamChatDirect({
+      await streamChatViaAPI({
         messages: [{ role: "user" as const, content: systemContent }, { role: "user" as const, content: prompt }],
         onChunk: (text: string) => {
           fullResponse += text;
@@ -821,7 +820,7 @@ ${summary || "（用户未填写具体内容）"}
                     </div>
                   </div>
                 </div>
-                <div className="report-card" style={{ flex: 1, overflowY: "auto" }}>
+                <div className="report-card" style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", minHeight: 0 }}>
                   <div className="report-text" style={{ whiteSpace: "pre-wrap", fontSize: "14px", lineHeight: "1.8", paddingBottom: "80px" }}>
                     {itineraryResult}
                     {itineraryLoading && (

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
-import { streamChatDirect } from "@/lib/streamDirect";
+import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE, streamChatViaAPI } from "@/lib/minimax";
 import { SchoolPosterModal, SchoolPosterProps } from "@/components/SchoolPosterCanvas";
 import { OrgPosterModal, OrgPosterProps } from "@/components/OrgPosterCanvas";
 
@@ -209,7 +208,7 @@ export default function BizPage() {
     let fullResponse = "";
 
     try {
-      await streamChatDirect({
+      await streamChatViaAPI({
         messages: [
           { role: "user" as const, content: buildSystemPrompt() },
           { role: "user" as const, content: prompt },

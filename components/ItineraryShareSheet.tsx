@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import ItineraryShareCard, { ItineraryShareCardProps } from "./ItineraryShareCard";
-import { streamChatDirect } from "@/lib/streamDirect";
-import { buildSystemPrompt } from "@/lib/minimax";
+import { buildSystemPrompt, streamChatViaAPI } from "@/lib/minimax";
 
 export interface ItineraryShareSheetProps {
   visible: boolean;
@@ -50,7 +49,7 @@ ${props.content}
 
     let fullResponse = "";
     try {
-      await streamChatDirect({
+      await streamChatViaAPI({
         messages: [
           { role: "user" as const, content: systemContent },
           { role: "user" as const, content: prompt },

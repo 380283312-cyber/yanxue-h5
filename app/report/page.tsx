@@ -117,7 +117,7 @@ export default function ReportPage() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#f5f5f5" }}>
+    <div style={{ position: "relative", height: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column", background: "#f5f5f5" }}>
       {/* 顶部导航 */}
       <div style={{
         background: "linear-gradient(135deg, #01c3a3 0%, #00a88a 100%)",
@@ -147,8 +147,11 @@ export default function ReportPage() {
 
       {/* 报告内容 - 独立滚动区域 */}
       <div style={{
-        flex: 1,
-        minHeight: 0,
+        position: "absolute",
+        top: "56px",
+        left: 0,
+        right: 0,
+        bottom: "72px",
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         padding: "16px",

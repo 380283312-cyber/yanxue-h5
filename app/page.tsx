@@ -479,12 +479,14 @@ ${summary || "（用户未填写具体内容）"}
         },
         onDone: () => {
           setReportLoading(false);
-          router.push(
-            `/report?data=${btoa(JSON.stringify({
+          // 用 sessionStorage 传递报告（避免 URL 长度的限制）
+          try {
+            sessionStorage.setItem('yanxue_report', JSON.stringify({
               name: `${reportForm.name}的研学报告`,
               content: fullResponse,
-            }))}`
-          );
+            }));
+          } catch {}
+          router.push('/report');
         },
         onError: (err: Error) => {
           fullResponse = FRIENDLY_ERROR_MESSAGE;

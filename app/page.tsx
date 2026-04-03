@@ -9,6 +9,7 @@ import ShareModal from "@/components/ShareModal";
 import PosterCanvas from "@/components/PosterCanvas";
 import ReportPosterCanvas from "@/components/ReportPosterCanvas";
 import PaywallModal from "@/components/PaywallModal";
+import ItineraryShareSheet from "@/components/ItineraryShareSheet";
 import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE } from "@/lib/minimax";
 import { streamChatDirect } from "@/lib/streamDirect";
 import { checkUsage, recordUsage, getRemaining } from "@/lib/useUsageTracker";
@@ -113,6 +114,9 @@ export default function HomePage() {
   const [shareVisible, setShareVisible] = useState(false);
   const openShare = useCallback(() => setShareVisible(true), []);
   const closeShare = useCallback(() => setShareVisible(false), []);
+
+  // Itinerary share sheet state
+  const [showItineraryShare, setShowItineraryShare] = useState(false);
 
   // Paywall modal state
   const [paywallVisible, setPaywallVisible] = useState(false);
@@ -800,10 +804,10 @@ ${summary || "（用户未填写具体内容）"}
                         📋 复制内容
                       </button>
                       <button
-                        className="template-tag tag-share"
-                        onClick={openShare}
+                        className="template-tag"
+                        onClick={() => setShowItineraryShare(true)}
                       >
-                        ↗ 更多分享
+                        📤 分享行程
                       </button>
                       <button
                         className="back-btn"
@@ -830,6 +834,17 @@ ${summary || "（用户未填写具体内容）"}
                   </div>
                 </div>
               </div>
+            )}
+            {showItineraryShare && (
+              <ItineraryShareSheet
+                visible={showItineraryShare}
+                onClose={() => setShowItineraryShare(false)}
+                destination={itineraryForm.destination}
+                days={itineraryForm.days}
+                grade={itineraryForm.grade}
+                content={itineraryResult}
+                intentionBase={itineraryForm.intentionBase}
+              />
             )}
           </div>
         </div>

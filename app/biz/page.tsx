@@ -176,7 +176,7 @@ export default function BizPage() {
         <div style={{ width: 40 }} />
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
         {view === "form" ? (
           <>
             {/* Type toggle */}

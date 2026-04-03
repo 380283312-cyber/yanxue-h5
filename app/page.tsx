@@ -611,7 +611,7 @@ ${summary || "（用户未填写具体内容）"}
         >
           <div className="itinerary-panel">
             {!itineraryResult ? (
-              <div className="itinerary-form">
+              <div className="itinerary-form" style={{ flex: 1, overflowY: "auto" }}>
                 <div>
                   <div className="itinerary-form-title">📍 研学行程规划</div>
                   <p style={{ fontSize: "13px", color: "var(--gray-500)", marginTop: "4px" }}>
@@ -808,8 +808,8 @@ ${summary || "（用户未填写具体内容）"}
                     </div>
                   </div>
                 </div>
-                <div className="report-card">
-                  <div className="report-text" style={{ whiteSpace: "pre-wrap", fontSize: "14px", lineHeight: "1.8" }}>
+                <div className="report-card" style={{ flex: 1, overflowY: "auto" }}>
+                  <div className="report-text" style={{ whiteSpace: "pre-wrap", fontSize: "14px", lineHeight: "1.8", paddingBottom: "80px" }}>
                     {itineraryResult}
                     {itineraryLoading && (
                       <span style={{ display: "inline-block" }}>

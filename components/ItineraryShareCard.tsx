@@ -10,6 +10,8 @@ export interface ItineraryShareCardProps {
   content: string;
   budget?: string;
   intentionBase?: string;
+  contactName?: string;
+  contactPhone?: string;
 }
 
 export async function generateItineraryCard(
@@ -18,7 +20,11 @@ export async function generateItineraryCard(
   return new Promise((resolve) => {
     const canvas = document.createElement("canvas");
     const W = 540;
-    const H = 675;
+    const lines = parseContentLines(props.content);
+    const lineHeight = 22;
+    const headerHeight = 40 + 28 + 30 + 10;
+    const bottomSection = 24 + 24 + 80 + 16;
+    const H = Math.max(600, headerHeight + (lines.length * lineHeight) + bottomSection);
     canvas.width = W;
     canvas.height = H;
 
@@ -76,21 +82,10 @@ export async function generateItineraryCard(
     ctx.font = "14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
     ctx.textBaseline = "alphabetic";
 
-    const lines = parseContentLines(props.content);
-    const maxLines = 5;
-    const displayLines = lines.slice(0, maxLines);
-
-    displayLines.forEach((line) => {
+    lines.forEach((line) => {
       ctx.fillText(line, padding, y);
       y += 22;
     });
-
-    if (lines.length > maxLines) {
-      ctx.fillStyle = "#9ca3af";
-      ctx.font = "12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-      ctx.fillText(`...还有 ${lines.length - maxLines} 天行程`, padding, y);
-      y += 18;
-    }
 
     y += 10;
     ctx.strokeStyle = "rgba(26, 58, 122, 0.15)";
@@ -112,6 +107,13 @@ export async function generateItineraryCard(
     }
 
     ctx.fillText(`📅 适合：${props.grade}`, padding, y);
+    y += 22;
+    if (props.contactName || props.contactPhone) {
+      const parts: string[] = [];
+      if (props.contactName) parts.push(props.contactName);
+      if (props.contactPhone) parts.push(`📞 ${props.contactPhone}`);
+      ctx.fillText(`👤 ${parts.join(" ")}`, padding, y);
+    }
 
     const qrUrl = `https://www.woaiyanxue.cn/itinerary?dest=${encodeURIComponent(props.destination)}`;
     const qrSize = 70;
@@ -170,7 +172,7 @@ function parseContentLines(content: string): string[] {
     });
   }
 
-  return lines.slice(0, 6);
+  return lines.slice(0, 20);
 }
 
 function roundRectPath(
@@ -206,7 +208,11 @@ export default function ItineraryShareCard(props: ItineraryShareCardProps) {
     if (!ctx) return;
 
     const W = 540;
-    const H = 675;
+    const lines = parseContentLines(props.content);
+    const lineHeight = 22;
+    const headerHeight = 40 + 28 + 30 + 10;
+    const bottomSection = 24 + 24 + 80 + 16;
+    const H = Math.max(600, headerHeight + (lines.length * lineHeight) + bottomSection);
     canvas.width = W;
     canvas.height = H;
 
@@ -258,21 +264,10 @@ export default function ItineraryShareCard(props: ItineraryShareCardProps) {
     ctx.font = "14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
     ctx.textBaseline = "alphabetic";
 
-    const lines = parseContentLines(props.content);
-    const maxLines = 5;
-    const displayLines = lines.slice(0, maxLines);
-
-    displayLines.forEach((line) => {
+    lines.forEach((line) => {
       ctx.fillText(line, padding, y);
       y += 22;
     });
-
-    if (lines.length > maxLines) {
-      ctx.fillStyle = "#9ca3af";
-      ctx.font = "12px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
-      ctx.fillText(`...还有 ${lines.length - maxLines} 天行程`, padding, y);
-      y += 18;
-    }
 
     y += 10;
     ctx.strokeStyle = "rgba(26, 58, 122, 0.15)";
@@ -294,6 +289,13 @@ export default function ItineraryShareCard(props: ItineraryShareCardProps) {
     }
 
     ctx.fillText(`📅 适合：${props.grade}`, padding, y);
+    y += 22;
+    if (props.contactName || props.contactPhone) {
+      const parts: string[] = [];
+      if (props.contactName) parts.push(props.contactName);
+      if (props.contactPhone) parts.push(`📞 ${props.contactPhone}`);
+      ctx.fillText(`👤 ${parts.join(" ")}`, padding, y);
+    }
 
     const qrUrl = `https://www.woaiyanxue.cn/itinerary?dest=${encodeURIComponent(props.destination)}`;
     const qrSize = 70;

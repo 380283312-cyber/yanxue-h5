@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.woaiyanxue.cn"),
+  metadataBase: new URL("https://woaiyanxue.cn"),
   title: {
     default: "研学AI助手 - 智能规划研学之旅",
     template: "%s | 研学AI助手",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "zh_CN",
     siteName: "研学AI助手",
-    url: "https://www.woaiyanxue.cn",
+    url: "https://woaiyanxue.cn",
     images: [
       {
         url: "/og-image.png",

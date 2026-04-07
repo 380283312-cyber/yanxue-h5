@@ -6,6 +6,8 @@ interface ItineraryFormData {
   grade: string;
   interest: string;
   intentionBase: string;
+  contactName: string;
+  contactPhone: string;
 }
 
 interface ItineraryState {
@@ -22,7 +24,7 @@ interface ItineraryState {
   reset: () => void;
 }
 export const useItineraryStore = create<ItineraryState>((set) => ({
-  formData: { destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "" },
+  formData: { destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "", contactName: "", contactPhone: "" },
   result: "",
   isLoading: false,
   xiaohongshuContent: "",
@@ -32,5 +34,5 @@ export const useItineraryStore = create<ItineraryState>((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setXiaohongshuContent: (content) => set({ xiaohongshuContent: content }),
   setBudget: (budget) => set({ budget }),
-  reset: () => set({ formData: { destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "" }, result: "", isLoading: false, xiaohongshuContent: "", budget: "" }),
+  reset: () => set({ formData: { destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "", contactName: "", contactPhone: "" }, result: "", isLoading: false, xiaohongshuContent: "", budget: "" }),
 }));

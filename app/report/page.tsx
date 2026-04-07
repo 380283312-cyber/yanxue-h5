@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
-import PrintableReportCanvas, { generateReportImage, PrintableReportProps } from "@/components/PrintableReportCanvas";
+import PrintableReportCanvas, { generateReportPDF, PrintableReportProps } from "@/components/PrintableReportCanvas";
 
 interface ReportData {
   name: string;
@@ -21,23 +21,63 @@ function parseReportContent(content: string): { summary: string; records: string
     reflection: "",
   };
 
-  const summaryMatch = content.match(/【研学概要】[\s\S]*?(?=【【)/);
-  if (summaryMatch) {
-    result.summary = summaryMatch[0].replace(/【研学概要】/g, "").trim();
-  }
-
-  const recordsMatch = content.match(/【(?:详细记录|研学记录)】[\s\S]*?(?=【)/);
-  if (recordsMatch) {
-    const recordsText = recordsMatch[0];
-    const dayMatches = recordsText.matchAll(/(?:第[一二三四五六七八九十\d]+天|Day\s*\d+)[:：]\s*([^\n【]+)/gi);
-    for (const match of dayMatches) {
-      result.records.push(match[1].trim());
+  // 研学概要：支持多种 emoji 格式
+  const summaryPatterns = [
+    /【📝\s*研学概要\s*】[\s\S]*?(?=【[^】]*?】|$)/,
+    /【📋\s*研学概要\s*】[\s\S]*?(?=【[^】]*?】|$)/,
+    /【\s*研学概要\s*】[\s\S]*?(?=【[^】]*?】|$)/,
+    /研学概要[：:]\s*([\s\S]*?)(?=【|第[一二三四五六七八九十\d]+天|$)/i,
+  ];
+  for (const p of summaryPatterns) {
+    const m = content.match(p);
+    if (m && m[0]) {
+      result.summary = m[0]
+        .replace(/【[^】]*】/g, "")
+        .replace(/研学概要[：:]\s*/gi, "")
+        .trim()
+        .substring(0, 500);
+      if (result.summary) break;
     }
   }
 
-  const reflectionMatch = content.match(/【(?:核心收获|收获与反思|成长评估)】[\s\S]*?(?=【|$)/);
-  if (reflectionMatch) {
-    result.reflection = reflectionMatch[0].replace(/【(?:核心收获|收获与反思|成长评估)】/g, "").trim();
+  // 研学活动记录：提取每天的行程段落作为记录
+  const recordsPatterns = [
+    /【📅\s*(?:详细记录|研学活动记录|研学记录)\s*】[\s\S]*?(?=【[^】]*?】|$)/i,
+    /【(?:详细记录|研学活动记录|研学记录)\s*】[\s\S]*?(?=【[^】]*?】|$)/i,
+  ];
+  for (const p of recordsPatterns) {
+    const m = content.match(p);
+    if (m && m[0]) {
+      const text = m[0].replace(/【[^】]*】/g, "\n");
+      // 按天分割，每天的内容作为一条记录
+      const dayBlocks = text.split(/(?:\n|^)(?=第[一二三四五六七八九十\d]+天|Day\s*\d+)/i);
+      for (const block of dayBlocks) {
+        const cleaned = block
+          .replace(/^[第\s\d一二三四五六七八九十]+[天\.\:：]*\s*/i, "")
+          .replace(/[#*\📅📝🏆✨\-\—]+/g, " ")
+          .trim();
+        if (cleaned.length > 15) {
+          result.records.push(cleaned.substring(0, 300));
+        }
+      }
+      break;
+    }
+  }
+
+  // 收获与反思
+  const reflectionPatterns = [
+    /【🌟\s*(?:收获与反思|核心收获|成长评估)\s*】[\s\S]*?(?=【[^】]*?】|$)/i,
+    /【(?:收获与反思|核心收获|成长评估)\s*】[\s\S]*?(?=【[^】]*?】|$)/i,
+  ];
+  for (const p of reflectionPatterns) {
+    const m = content.match(p);
+    if (m && m[0]) {
+      result.reflection = m[0]
+        .replace(/【[^】]*】/g, "")
+        .trim()
+        .substring(0, 500);
+      break;
+    }
   }
 
   return result;
@@ -47,7 +87,7 @@ export default function ReportPage() {
   const router = useRouter();
   const [report, setReport] = useState<ReportData | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [previewDataUrl, setPreviewDataUrl] = useState("");
+  const [previewDataUrl, setPreviewDataUrl] = useState<{ pdf: string; png: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
@@ -63,12 +103,19 @@ export default function ReportPage() {
     }
   }, []);
 
+  const [toast, setToast] = useState<{msg:string;type:"ok"|"err"}|null>(null);
+
+  const showToast = (msg: string, type: "ok"|"err" = "ok") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2500);
+  };
+
   const handleCopyContent = async () => {
     try {
       await navigator.clipboard.writeText(report?.content || "");
-      alert("报告内容已复制！");
+      showToast("报告内容已复制！");
     } catch {
-      alert("复制失败");
+      showToast("复制失败，请重试", "err");
     }
   };
 
@@ -84,28 +131,31 @@ export default function ReportPage() {
       base: report.base || "",
       theme: report.theme || report.name,
       date: report.date || "",
-      summary: parsed.summary,
-      records: parsed.records.length > 0 ? parsed.records : ["", "", ""],
+      summary: parsed.summary || report.content.substring(0, 300),
+      records: parsed.records.length > 0 ? parsed.records : [report.content.substring(0, 200)],
       reflection: parsed.reflection,
+      contactName: (report as any).contactName || "",
+      contactPhone: (report as any).contactPhone || "",
     };
 
     try {
-      const dataUrl = await generateReportImage(props);
-      setPreviewDataUrl(dataUrl);
+      const { pdf, png } = await generateReportPDF(props);
+      setPreviewDataUrl({ pdf, png });
       setShowPreview(true);
     } catch (e) {
-      alert("生成报告图片失败");
+      showToast("生成报告失败，请重试", "err");
     } finally {
       setPreviewLoading(false);
     }
   }, [report]);
 
   const handleSaveImage = () => {
-    if (!previewDataUrl) return;
+    if (!previewDataUrl?.png) return;
     const link = document.createElement("a");
     link.download = `研学报告_${report?.studentName || "学生"}_${report?.date || ""}.png`;
-    link.href = previewDataUrl;
+    link.href = previewDataUrl.png;
     link.click();
+    showToast("已保存到相册");
   };
 
   if (!report) {
@@ -145,7 +195,20 @@ export default function ReportPage() {
         </button>
       </div>
 
-      {/* 报告内容 - 独立滚动区域 */}
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 60, left: "50%", transform: "translateX(-50%)",
+          background: toast.type === "err" ? "#fee2e2" : "#d1fae5",
+          color: toast.type === "err" ? "#991b1b" : "#065f46",
+          padding: "10px 20px", borderRadius: 12, fontSize: 14, fontWeight: 600,
+          zIndex: 9999, boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          transition: "opacity 0.3s"
+        }}>
+          {toast.msg}
+        </div>
+      )}
+      {/* 报告内容 */}
       <div style={{
         position: "absolute",
         top: "56px",
@@ -262,7 +325,7 @@ export default function ReportPage() {
             background: "rgba(0,0,0,0.3)",
             flexShrink: 0,
           }}>
-            <span style={{ color: "white", fontSize: "16px", fontWeight: "600" }}>报告预览</span>
+            <span style={{ color: "white", fontSize: "16px", fontWeight: "600" }}>报告预览 - 竖版A4</span>
             <button
               onClick={() => setShowPreview(false)}
               style={{ background: "none", border: "none", color: "white", fontSize: "16px", cursor: "pointer" }}
@@ -271,10 +334,11 @@ export default function ReportPage() {
             </button>
           </div>
           <div style={{ flex: 1, overflow: "auto", padding: "16px" }}>
-            <img
-              src={previewDataUrl}
-              alt="报告预览"
-              style={{ width: "100%", maxWidth: 800, display: "block", margin: "0 auto", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}
+            <iframe
+              src={previewDataUrl?.pdf}
+              title="报告预览"
+              sandbox="allow-same-origin allow-scripts"
+              style={{ width: "100%", height: "85vh", maxWidth: 800, display: "block", margin: "0 auto", boxShadow: "0 4px 20px rgba(0,0,0,0.5)", border: "none", background: "#fff" }}
             />
           </div>
           <div style={{

@@ -9,6 +9,8 @@ interface ReportFormData {
   location: string;
   summary: string;
   base: string;
+  contactName: string;
+  contactPhone: string;
 }
 
 interface ReportState {
@@ -21,11 +23,11 @@ interface ReportState {
   reset: () => void;
 }
 export const useReportStore = create<ReportState>((set) => ({
-  formData: { name: "", school: "", grade: "初一", theme: "", date: "", location: "", summary: "", base: "" },
+  formData: { name: "", school: "", grade: "初一", theme: "", date: "", location: "", summary: "", base: "", contactName: "", contactPhone: "" },
   result: "",
   isLoading: false,
   setFormData: (data) => set((state) => ({ formData: { ...state.formData, ...data } })),
   setResult: (result) => set({ result }),
   setIsLoading: (isLoading) => set({ isLoading }),
-  reset: () => set({ formData: { name: "", school: "", grade: "初一", theme: "", date: "", location: "", summary: "", base: "" }, result: "", isLoading: false }),
+  reset: () => set({ formData: { name: "", school: "", grade: "初一", theme: "", date: "", location: "", summary: "", base: "", contactName: "", contactPhone: "" }, result: "", isLoading: false }),
 }));

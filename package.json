@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "jssdk": "^0.0.1",
     "next": "16.2.1",
     "qrcode": "^1.5.4",

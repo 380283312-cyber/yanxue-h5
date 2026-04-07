@@ -8,7 +8,7 @@ import { OrgPosterModal, OrgPosterProps } from "@/components/OrgPosterCanvas";
 
 type BizType = "org" | "school";
 
-const SHARE_URL = "https://www.woaiyanxue.cn";
+const SHARE_URL = "https://woaiyanxue.cn";
 
 export default function BizPage() {
   const [bizType, setBizType] = useState<BizType>("org");
@@ -19,6 +19,7 @@ export default function BizPage() {
   const [posterProps, setPosterProps] = useState<SchoolPosterProps | null>(null);
   const [showOrgPosterModal, setShowOrgPosterModal] = useState(false);
   const [orgPosterProps, setOrgPosterProps] = useState<OrgPosterProps | null>(null);
+  const [bizFieldError, setBizFieldError] = useState<string>("");
 
   const extractSchoolPosterInfo = (resultText: string): SchoolPosterProps => {
     const getMatch = (pattern: RegExp, defaultValue: string): string => {
@@ -34,7 +35,8 @@ export default function BizPage() {
     const highlight1 = getMatch(/活动亮点1：([^\n]+)/, "精彩纷呈");
     const highlight2 = getMatch(/活动亮点2：([^\n]+)/, "寓教于乐");
     const highlight3 = getMatch(/活动亮点3：([^\n]+)/, "收获满满");
-    const contactInfo = getMatch(/联系方式：([^\n]+)/, "");
+    const contactName = schoolForm.contactName || getMatch(/联系人：([^\n]+)/, "");
+    const contactPhone = schoolForm.contactPhone || getMatch(/联系方式：([^\n]+)/, "");
 
     return {
       schoolName,
@@ -43,7 +45,8 @@ export default function BizPage() {
       location,
       grade,
       highlights: [highlight1, highlight2, highlight3],
-      contactInfo: contactInfo || undefined,
+      contactName: contactName || undefined,
+      contactPhone: contactPhone || undefined,
     };
   };
 
@@ -58,7 +61,8 @@ export default function BizPage() {
     const location = getMatch(/所在地：([^\n]+)/, orgForm.location || "待填写");
     const targetAge = getMatch(/适合年龄：([^\n]+)/, orgForm.targetAge || "待填写");
     const price = getMatch(/参考价格：([^\n]+)/, orgForm.price || "");
-    const contactInfo = getMatch(/联系方式：([^\n]+)/, "");
+    const contactName = orgForm.contactName || getMatch(/联系人：([^\n]+)/, "");
+    const contactPhone = orgForm.contactPhone || getMatch(/联系方式：([^\n]+)/, "");
 
     let features = "";
     const featuresMatch = resultText.match(/【课程介绍】[\s\S]*?【/);
@@ -80,7 +84,8 @@ export default function BizPage() {
       targetAge,
       features,
       price: price || undefined,
-      contactInfo: contactInfo || undefined,
+      contactName: contactName || undefined,
+      contactPhone: contactPhone || undefined,
     };
   };
 
@@ -104,6 +109,8 @@ export default function BizPage() {
     targetAge: "小学3-6年级",
     features: "",
     price: "",
+    contactName: "",
+    contactPhone: "",
   });
 
   // School form
@@ -114,6 +121,8 @@ export default function BizPage() {
     days: "3",
     location: "",
     budget: "",
+    contactName: "",
+    contactPhone: "",
   });
 
   const buildOrgPrompt = () =>
@@ -200,6 +209,22 @@ export default function BizPage() {
 联系方式：待填写`;
 
   const handleGenerate = async () => {
+    // ── 字段校验 ──
+    const errs: string[] = [];
+    if (bizType === "org") {
+      if (!orgForm.name.trim()) errs.push("请填写机构名称");
+      if (!orgForm.location.trim()) errs.push("请填写所在地");
+      if (!orgForm.features.trim()) errs.push("请填写核心特色");
+      if (orgForm.features.trim().length > 0 && orgForm.features.trim().length < 15)
+        errs.push("核心特色至少填写15个字（例如：专注青少年科技创新教育，拥有10年经验）");
+    } else {
+      if (!schoolForm.name.trim()) errs.push("请填写学校名称");
+      if (!schoolForm.theme.trim()) errs.push("请填写研学主题");
+      if (!schoolForm.location.trim()) errs.push("请填写活动地点");
+    }
+    if (errs.length > 0) { setBizFieldError(errs[0]); return; }
+    setBizFieldError("");
+
     const prompt = bizType === "org" ? buildOrgPrompt() : buildSchoolPrompt();
     setLoading(true);
     setResult("");
@@ -240,8 +265,8 @@ export default function BizPage() {
 
   const canGenerate =
     bizType === "org"
-      ? orgForm.name.trim()
-      : schoolForm.name.trim() && schoolForm.theme.trim();
+      ? orgForm.name.trim() && orgForm.location.trim() && orgForm.features.trim() && !bizFieldError
+      : schoolForm.name.trim() && schoolForm.theme.trim() && schoolForm.location.trim() && !bizFieldError;
 
   return (
     <div
@@ -345,7 +370,7 @@ export default function BizPage() {
 
               {bizType === "org" ? (
                 <>
-                  <FormGroup label="机构名称 *" required>
+                  <FormGroup label="机构名称 *">
                     <input
                       style={inputStyle}
                       placeholder="例如：北京探知研学基地"
@@ -387,7 +412,7 @@ export default function BizPage() {
                       onChange={(e) => setOrgForm((f) => ({ ...f, location: e.target.value }))}
                     />
                   </FormGroup>
-                  <FormGroup label="核心特色">
+                  <FormGroup label="核心特色" labelHint="*（不少于15字）">
                     <input
                       style={inputStyle}
                       placeholder="例如：自然探索、科技体验、历史文化"
@@ -403,10 +428,28 @@ export default function BizPage() {
                       onChange={(e) => setOrgForm((f) => ({ ...f, price: e.target.value }))}
                     />
                   </FormGroup>
+                  <FormRow>
+                    <FormGroup label="联系人">
+                      <input
+                        style={inputStyle}
+                        placeholder="姓名"
+                        value={orgForm.contactName}
+                        onChange={(e) => setOrgForm((f) => ({ ...f, contactName: e.target.value }))}
+                      />
+                    </FormGroup>
+                    <FormGroup label="联系电话">
+                      <input
+                        style={inputStyle}
+                        placeholder="手机号"
+                        value={orgForm.contactPhone}
+                        onChange={(e) => setOrgForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                      />
+                    </FormGroup>
+                  </FormRow>
                 </>
               ) : (
                 <>
-                  <FormGroup label="学校名称 *" required>
+                  <FormGroup label="学校名称 *">
                     <input
                       style={inputStyle}
                       placeholder="例如：北京市第一中学"
@@ -441,7 +484,7 @@ export default function BizPage() {
                       </select>
                     </FormGroup>
                   </FormRow>
-                  <FormGroup label="研学主题 *" required>
+                  <FormGroup label="研学主题" labelHint="*">
                     <input
                       style={inputStyle}
                       placeholder="例如：走进人工智能，体验科技魅力"
@@ -465,7 +508,31 @@ export default function BizPage() {
                       onChange={(e) => setSchoolForm((f) => ({ ...f, budget: e.target.value }))}
                     />
                   </FormGroup>
+                  <FormRow>
+                    <FormGroup label="联系人">
+                      <input
+                        style={inputStyle}
+                        placeholder="姓名"
+                        value={schoolForm.contactName}
+                        onChange={(e) => setSchoolForm((f) => ({ ...f, contactName: e.target.value }))}
+                      />
+                    </FormGroup>
+                    <FormGroup label="联系电话">
+                      <input
+                        style={inputStyle}
+                        placeholder="手机号"
+                        value={schoolForm.contactPhone}
+                        onChange={(e) => setSchoolForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                      />
+                    </FormGroup>
+                  </FormRow>
                 </>
+              )}
+
+              {bizFieldError && (
+                <div style={{ color: "#dc2626", fontSize: "13px", padding: "10px 12px", background: "#fef2f2", borderRadius: "8px", border: "1px solid #fecaca", marginTop: "8px" }}>
+                  ⚠️ {bizFieldError}
+                </div>
               )}
 
               <button
@@ -640,19 +707,25 @@ export default function BizPage() {
   );
 }
 
-function FormGroup({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
+function FormGroup({ label, labelHint, children }: { label: string; labelHint?: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: "12px" }}>
       <label
         style={{
-          display: "block",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
           color: "#374151",
           fontSize: "13px",
           fontWeight: 500,
           marginBottom: "6px",
+          flexWrap: "wrap",
         }}
       >
         {label}
+        {labelHint && (
+          <span style={{ fontSize: "12px", color: "#f59e0b", fontWeight: 500 }}>{labelHint}</span>
+        )}
       </label>
       {children}
     </div>

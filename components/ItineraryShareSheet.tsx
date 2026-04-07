@@ -13,6 +13,8 @@ export interface ItineraryShareSheetProps {
   content: string;
   budget?: string;
   intentionBase?: string;
+  contactName?: string;
+  contactPhone?: string;
 }
 
 export default function ItineraryShareSheet(props: ItineraryShareSheetProps) {
@@ -20,6 +22,8 @@ export default function ItineraryShareSheet(props: ItineraryShareSheetProps) {
   const [xiaohongshuContent, setXiaohongshuContent] = useState<string>("");
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [copiedType, setCopiedType] = useState<string | null>(null);
+  const [contactName, setContactName] = useState<string>(props.contactName || "");
+  const [contactPhone, setContactPhone] = useState<string>(props.contactPhone || "");
   const cardRef = useRef<HTMLDivElement>(null);
 
   const generateXiaohongshuContent = useCallback(async () => {
@@ -103,7 +107,18 @@ ${props.content.slice(0, 200)}...
 
     const canvas = document.createElement("canvas");
     const W = 540;
-    const H = 675;
+    const padding = 24;
+    let y = 40;
+
+    // Parse content into structured lines
+    const lines = parseContentLines(props.content);
+
+    // Calculate dynamic height
+    const headerHeight = 40 + 28 + 30 + 10; // destination + title + divider
+    const lineHeight = 22;
+    const bottomSection = 24 + 24 + 80 + 16; // budget + grade + qr area + bottom gradient
+    const H = Math.max(600, headerHeight + (lines.length * lineHeight) + bottomSection);
+
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext("2d");
@@ -116,6 +131,8 @@ ${props.content.slice(0, 200)}...
       content: props.content,
       budget: props.budget,
       intentionBase: props.intentionBase,
+      contactName: contactName || undefined,
+      contactPhone: contactPhone || undefined,
     };
 
     ctx.fillStyle = "#faf8f4";
@@ -134,9 +151,6 @@ ${props.content.slice(0, 200)}...
     bottomGradient.addColorStop(1, "#00a88a");
     ctx.fillStyle = bottomGradient;
     ctx.fillRect(0, H - 16, W, 16);
-
-    const padding = 24;
-    let y = 40;
 
     ctx.fillStyle = "#01c3a3";
     ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
@@ -164,10 +178,9 @@ ${props.content.slice(0, 200)}...
     ctx.fillStyle = "#4b5563";
     ctx.font = "14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
 
-    const lines = parseContentLines(props.content);
-    lines.slice(0, 5).forEach((line) => {
+    lines.forEach((line) => {
       ctx.fillText(line, padding, y);
-      y += 22;
+      y += lineHeight;
     });
 
     y += 10;
@@ -333,6 +346,24 @@ ${props.content.slice(0, 200)}...
             </p>
           </div>
 
+          {/* 联系人信息 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px" }}>
+            <input
+              type="text"
+              placeholder="联系人姓名"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", outline: "none" }}
+            />
+            <input
+              type="tel"
+              placeholder="联系电话"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", outline: "none" }}
+            />
+          </div>
+
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <button
               onClick={handleSaveImage}
@@ -462,12 +493,12 @@ function parseContentLines(content: string): string[] {
 
   if (lines.length === 0 && content) {
     const sentences = content.split(/[。！？\n]/).filter((s) => s.trim().length > 0);
-    sentences.slice(0, 5).forEach((s, i) => {
+    sentences.slice(0, 10).forEach((s, i) => {
       if (s.trim()) {
         lines.push(`第${i + 1}天：${s.trim()}`);
       }
     });
   }
 
-  return lines.slice(0, 6);
+  return lines.slice(0, 20);
 }

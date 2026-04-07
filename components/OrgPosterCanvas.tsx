@@ -9,7 +9,8 @@ export interface OrgPosterProps {
   targetAge: string;
   features: string;
   price?: string;
-  contactInfo?: string;
+  contactName?: string;
+  contactPhone?: string;
 }
 
 const WIDTH = 540;
@@ -26,31 +27,51 @@ const COLORS = {
   border: "#e5e7eb",
 };
 
+// 确保 Noto Sans SC 字体已加载（Canvas 2D 依赖浏览器 Fonts API）
+async function ensureNotoSansSC() {
+  try {
+    const linkId = "noto-sans-sc-font";
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap";
+      document.head.appendChild(link);
+    }
+    await document.fonts.ready;
+    await new Promise(r => setTimeout(r, 200));
+  } catch (_) {}
+}
+
 function drawPoster(ctx: CanvasRenderingContext2D, props: OrgPosterProps) {
-  const { orgName, orgType, location, targetAge, features, price, contactInfo } = props;
+  const { orgName, orgType, location, targetAge, features, price, contactName, contactPhone } = props;
 
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const topGradient = ctx.createLinearGradient(0, 0, 0, 60);
+  // 顶部渐变条
+  const topGradient = ctx.createLinearGradient(0, 0, 0, 70);
   topGradient.addColorStop(0, COLORS.gradientStart);
   topGradient.addColorStop(1, COLORS.gradientEnd);
   ctx.fillStyle = topGradient;
-  ctx.fillRect(0, 0, WIDTH, 60);
+  ctx.fillRect(0, 0, WIDTH, 70);
 
+  // 主标题
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 22px 'PingFang SC', 'Microsoft YaHei', serif";
+  ctx.font = "bold 22px 'Noto Sans SC', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("机构招生宣传", WIDTH / 2, 28);
 
-  let y = 85;
+  // 机构名称
+  let y = 90;
   ctx.fillStyle = COLORS.primary;
-  ctx.font = "bold 26px 'PingFang SC', 'Microsoft YaHei', serif";
+  ctx.font = "bold 26px 'Noto Sans SC', sans-serif";
   ctx.fillText(orgName || "机构名称", WIDTH / 2, y);
 
+  // 机构类型+所在地
   y += 28;
   ctx.fillStyle = COLORS.lightText;
-  ctx.font = "14px 'PingFang SC', 'Microsoft YaHei', sans-serif";
+  ctx.font = "14px 'Noto Sans SC', sans-serif";
   ctx.fillText(`${orgType || "研学机构"} · ${location || "所在地"}`, WIDTH / 2, y);
 
   y += 20;
@@ -61,118 +82,109 @@ function drawPoster(ctx: CanvasRenderingContext2D, props: OrgPosterProps) {
   ctx.lineTo(WIDTH - 20, y);
   ctx.stroke();
 
+  // 课程介绍
   y += 25;
   ctx.fillStyle = COLORS.accent;
-  ctx.font = "bold 16px 'PingFang SC', 'Microsoft YaHei', sans-serif";
+  ctx.font = "bold 16px 'Noto Sans SC', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("【课程介绍】", 30, y);
+  ctx.fillText("课程介绍", 24, y);
 
   y += 28;
   ctx.fillStyle = COLORS.text;
-  ctx.font = "14px 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  
+  ctx.font = "14px 'Noto Sans SC', sans-serif";
   const featuresText = features || "机构特色和课程介绍";
-  const maxWidth = WIDTH - 60;
+  const maxWidth = WIDTH - 48;
   const lineHeight = 22;
   const words = featuresText.split("");
   let line = "";
   let lineY = y;
-  
+
   for (let i = 0; i < words.length; i++) {
     const testLine = line + words[i];
     const metrics = ctx.measureText(testLine);
     if (metrics.width > maxWidth && i > 0) {
-      ctx.fillText(line, 30, lineY);
+      ctx.fillText(line, 24, lineY);
       line = words[i];
       lineY += lineHeight;
-      if (lineY > y + lineHeight * 4) break;
+      if (lineY > y + lineHeight * 7) break;
     } else {
       line = testLine;
     }
   }
-  ctx.fillText(line, 30, lineY);
+  ctx.fillText(line, 24, lineY);
 
-  y = lineY + 30;
+  lineY += 20;
   ctx.strokeStyle = COLORS.border;
   ctx.beginPath();
-  ctx.moveTo(20, y);
-  ctx.lineTo(WIDTH - 20, y);
+  ctx.moveTo(20, lineY);
+  ctx.lineTo(WIDTH - 20, lineY);
   ctx.stroke();
 
-  y += 25;
+  // 适合人群
+  lineY += 25;
   ctx.fillStyle = COLORS.text;
-  ctx.font = "15px 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  ctx.fillText(`【适合人群】${targetAge || "待填写"}`, 30, y);
+  ctx.font = "bold 15px 'Noto Sans SC', sans-serif";
+  ctx.fillText(`适合人群：${targetAge || "待填写"}`, 24, lineY);
 
-  y += 28;
-  ctx.fillText(`【参考价格】${price || "请咨询"}`, 30, y);
+  // 参考价格
+  lineY += 26;
+  ctx.font = "bold 15px 'Noto Sans SC', sans-serif";
+  ctx.fillText(`参考价格：${price || "请咨询"}`, 24, lineY);
 
-  y += 25;
+  lineY += 20;
   ctx.strokeStyle = COLORS.border;
   ctx.beginPath();
-  ctx.moveTo(20, y);
-  ctx.lineTo(WIDTH - 20, y);
+  ctx.moveTo(20, lineY);
+  ctx.lineTo(WIDTH - 20, lineY);
   ctx.stroke();
 
-  y += 25;
+  // 联系方式
+  lineY += 25;
   ctx.fillStyle = COLORS.accent;
-  ctx.font = "bold 16px 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  ctx.fillText("【联系方式】", 30, y);
+  ctx.font = "bold 16px 'Noto Sans SC', sans-serif";
+  ctx.fillText("联系我们", 24, lineY);
 
-  y += 28;
+  lineY += 28;
   ctx.fillStyle = COLORS.text;
-  ctx.font = "14px 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  ctx.fillText(`📞 ${contactInfo || "请电话咨询"}`, 30, y);
+  ctx.font = "15px 'Noto Sans SC', sans-serif";
+  if (contactName) {
+    ctx.fillText("联系人：" + contactName, 24, lineY);
+    lineY += 26;
+  }
+  if (contactPhone) {
+    ctx.fillStyle = COLORS.primary;
+    ctx.font = "bold 18px 'Noto Sans SC', sans-serif";
+    ctx.fillText("📞 " + contactPhone, 24, lineY);
+  }
 
-  y += 24;
-  ctx.fillText(`📍 ${location || "来访咨询"}`, 30, y);
+  lineY += 28;
+  ctx.fillStyle = COLORS.primary;
+  ctx.font = "bold 18px 'Noto Sans SC', sans-serif";
+  ctx.fillText("欢迎来电 / 来访洽谈合作！", 24, lineY);
 
-  y += 30;
-  ctx.fillStyle = "#f9fafb";
-  ctx.fillRect(30, y, WIDTH - 60, 100);
-
-  ctx.fillStyle = "#e5e7eb";
-  ctx.fillRect(50, y + 10, 80, 80);
-
-  ctx.fillStyle = COLORS.lightText;
-  ctx.font = "12px 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("扫码咨询", 90, y + 55);
-
-  ctx.fillStyle = "#f3f4f6";
-  ctx.fillRect(150, y + 20, 100, 60);
-
-  ctx.strokeStyle = COLORS.border;
-  ctx.strokeRect(150, y + 20, 100, 60);
-
-  ctx.fillStyle = COLORS.lightText;
-  ctx.font = "12px 'PingFang SC', 'Microsoft YaHei', sans-serif";
-  ctx.fillText("[机构logo]", 200, y + 55);
-
-  const bottomY = HEIGHT - 50;
+  // 底部渐变条
+  const bottomY = HEIGHT - 55;
   const bottomGradient = ctx.createLinearGradient(0, bottomY, 0, HEIGHT);
   bottomGradient.addColorStop(0, COLORS.gradientStart);
   bottomGradient.addColorStop(1, COLORS.gradientEnd);
   ctx.fillStyle = bottomGradient;
-  ctx.fillRect(0, bottomY, WIDTH, 50);
+  ctx.fillRect(0, bottomY, WIDTH, 55);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px 'PingFang SC', 'Microsoft YaHei', sans-serif";
+  ctx.font = "13px 'Noto Sans SC', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("让孩子在体验中成长", WIDTH / 2, HEIGHT - 20);
 }
-
 export async function generateOrgPoster(props: OrgPosterProps): Promise<string> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      drawPoster(ctx, props);
-    }
-    resolve(canvas.toDataURL("image/png"));
-  });
+  await ensureNotoSansSC();
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    drawPoster(ctx, props);
+  }
+  return canvas.toDataURL("image/png");
 }
 
 export function OrgPosterCanvas(props: OrgPosterProps) {
@@ -180,14 +192,20 @@ export function OrgPosterCanvas(props: OrgPosterProps) {
   const [dataUrl, setDataUrl] = useState<string>("");
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        drawPoster(ctx, props);
-        setDataUrl(canvas.toDataURL("image/png"));
+    let mounted = true;
+    (async () => {
+      await ensureNotoSansSC();
+      if (!mounted) return;
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          drawPoster(ctx, props);
+          setDataUrl(canvas.toDataURL("image/png"));
+        }
       }
-    }
+    })();
+    return () => { mounted = false; };
   }, [props]);
 
   return (
@@ -235,14 +253,20 @@ export function OrgPosterModal({
   const [dataUrl, setDataUrl] = useState<string>("");
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        drawPoster(ctx, props);
-        setDataUrl(canvas.toDataURL("image/png"));
+    let mounted = true;
+    (async () => {
+      await ensureNotoSansSC();
+      if (!mounted) return;
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          drawPoster(ctx, props);
+          setDataUrl(canvas.toDataURL("image/png"));
+        }
       }
-    }
+    })();
+    return () => { mounted = false; };
   }, [props]);
 
   const handleSave = () => {

@@ -15,6 +15,7 @@ interface ReportPosterCanvasProps {
   reportSummary?: string;
   /**  图片生成完毕后回调，传入 dataURL */
   onDataUrlReady?: (dataUrl: string) => void;
+
 }
 
 const W = 600;
@@ -282,7 +283,7 @@ export default function ReportPosterCanvas({
     ctx.fill();
 
     // ─── Async QR code ───────────────────────────────────────────────
-    QRCode.toDataURL(url, {
+    QRCode.toDataURL(url || "https://www.woaiyanxue.cn", {
       width: qSize,
       margin: 2,
       color: { dark: DEEP_BLUE, light: "#ffffff" },

@@ -60,6 +60,8 @@ interface ItineraryFormData {
   grade: string;
   interest: string;
   intentionBase: string;
+  contactName: string;
+  contactPhone: string;
 }
 
 // ─── Report Form ────────────────────────────────────────────────────────────
@@ -73,6 +75,8 @@ interface ReportFormData {
   location: string;
   summary: string;
   base: string;
+  contactName: string;
+  contactPhone: string;
 }
 
 // ─── Main Page Component ─────────────────────────────────────────────────────
@@ -88,6 +92,7 @@ export default function HomePage() {
   const showWelcome = useChatStore((s) => s.showWelcome);
   const setShowWelcome = (v: boolean) => chatStore.setShowWelcome(v);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
 
   // Itinerary state
   const itineraryStore = useItineraryStore();
@@ -108,6 +113,7 @@ export default function HomePage() {
   };
   const setReportResult = reportStore.setResult;
   const setReportLoading = reportStore.setIsLoading;
+  const [reportFieldError, setReportFieldError] = useState<string>("");
 
   // Share modal state
   const [shareVisible, setShareVisible] = useState(false);
@@ -385,8 +391,20 @@ export default function HomePage() {
   // ─── Report Generate ─────────────────────────────────────────────────────────
 
   const handleGenerateReport = useCallback(async () => {
-    const { name, school, grade, theme, date, location, summary } = reportForm;
-    if (!name.trim() || !theme.trim()) return;
+    const { name, school, grade, theme, date, location, summary, base } = reportForm;
+
+    // ── 字段校验：核心字段必填，研学概要不少于15字 ──
+    const errors: string[] = [];
+    if (!name.trim()) errors.push("请填写学生姓名");
+    if (!base.trim()) errors.push("请填写研学基地");
+    if (!theme.trim()) errors.push("请填写研学主题");
+    if (summary.trim().length > 0 && summary.trim().length < 15) errors.push("研学概要至少填写15个字，请描述这次研学的主要内容和亮点");
+
+    if (errors.length > 0) {
+      setReportFieldError(errors[0]);
+      return;
+    }
+    setReportFieldError("");
 
     const status = checkUsage();
     if (!status.allowed) {
@@ -414,62 +432,20 @@ export default function HomePage() {
 【研学概要】
 ${summary || "（用户未填写具体内容）"}
 
-请按以下格式生成一份高质量研学报告，要求：数据充实、分段清晰、情感真实、适合分享展示：
+请按以下格式生成研学报告内容，严格使用以下标记格式，不要添加emoji符号：
 
-═══════════════════════════════
-🏛️ 【研学报告】${theme}
-═══════════════════════════════
+【研学概要】
+（请写一段100-200字的研学总结，体现学生的主要收获和感悟）
 
-【📋 基本信息卡】
-姓名：${name} ｜ 学校：${school || "—"} ｜ 年级：${grade}
-研学基地：${reportForm.base} ｜ 时间：${date || "—"} ｜ 地点：${location || "—"}
+【研学记录】
+第1天：（描述当天的主要活动和学习内容，50-100字）
+第2天：（描述当天的主要活动和学习内容，50-100字）
+第3天：（描述当天的主要活动和学习内容，50-100字）
 
-【📊 研学数据概览】（虚构但合理的数据）
-• 行走步数：约 12,000 步/天
-• 学习时长：约 4 小时/天
-• 参与活动：3-5 项
-• 覆盖知识领域：2-3 个学科
-• 综合评级：★★★★☆（四星优秀）
+【收获反思】
+（请写一段100-150字的反思，内容真实，体现知识、能力、情感三方面的收获）
 
-【📝 研学概要】（约200字）
-（根据主题和基地，写一段真实感人的研学总结，体现学生的成长与收获）
-
-【📅 详细记录】
-第1天：
-⏰ 08:30-09:00｜抵达基地，开营仪式
-🎯 学习目标：了解基地历史与研学主题
-💡 精彩瞬间：（描述一个令人印象深刻的画面）
-🏆 今日收获：（用一句话总结）
-
-第2天：...（根据基地特点继续展开）
-
-【🌟 核心收获】
-• 知识层面：（结合基地主题，写2-3个具体知识点）
-• 能力层面：（写1-2个实际提升的能力）
-• 情感层面：（写一段真情实感的反思）
-
-【💪 成长评估】（雷达图文字版）
-• 历史素养：████████░░ 85%
-• 动手能力：██████████ 95%
-• 团队协作：███████░░░ 75%
-• 创新思维：████████░░ 80%
-• 文化自信：██████████ 98%
-
-【🏠 家长行动指南】
-✓ 回程后可以这样延续这次研学：
-  1. （具体可操作的亲子活动建议）
-  2. （与研学主题相关的延伸学习建议）
-  3. （推荐的相关纪录片/书籍）
-
-【📝 老师/家长评语模板】
-"这次研学让___深刻体验了___，在___方面表现突出。期待他在接下来的学习中继续保持这份热情与好奇心。"
-
-【🎓 结业证书】（装饰性文字）
-　本证书授予　${name}　同学
-　已完成「${theme}」研学课程
-　特此证明 ✨
-
-报告语言亲切专业，格式美观，适合打印存档和微信分享。`;
+报告内容真实自然，语言亲切，适合打印存档。`;
 
       const systemContent = buildSystemPrompt();
       let fullResponse = "";
@@ -492,6 +468,8 @@ ${summary || "（用户未填写具体内容）"}
               base: reportForm.base,
               theme: reportForm.theme,
               date: reportForm.date,
+              contactName: reportForm.contactName,
+              contactPhone: reportForm.contactPhone,
             }));
           } catch {}
           router.push('/report');
@@ -570,20 +548,37 @@ ${summary || "（用户未填写具体内容）"}
                     试试快捷问题，或直接输入你的需求吧！
                   </p>
                   <div className="free-usage-badge">
-                    🎁 今日免费次数：<strong>{freeRemaining > 0 ? freeRemaining : 0}</strong> / 3
-                    {freeRemaining === 0 && <span style={{color:"#ff6b35",marginLeft:"6px"}}>（已用完）</span>}
+                    🎁 功能内测中
                   </div>
                   <div className="quick-prompts">
-                    {QUICK_PROMPTS.map((qp) => (
-                      <button
-                        key={qp.label}
-                        className={`quick-prompt-btn${qp.isBiz ? " quick-prompt-btn--biz" : ""}`}
-                        style={{ "--accent": qp.accent } as React.CSSProperties}
-                        onClick={() => handleQuickPrompt(qp.prompt)}
-                      >
-                        <span className="quick-prompt-label">{qp.label}</span>
-                      </button>
-                    ))}
+                    <button
+                      className="quick-prompt-btn"
+                      style={{ "--accent": "#01c3a3" } as React.CSSProperties}
+                      onClick={() => handleQuickPrompt(QUICK_PROMPTS[0].prompt)}
+                    >
+                      <span className="quick-prompt-label">🔍 帮我搜西安的研学课程</span>
+                    </button>
+                    <button
+                      className="quick-prompt-btn"
+                      style={{ "--accent": "#01c3a3" } as React.CSSProperties}
+                      onClick={() => setActiveTab("itinerary")}
+                    >
+                      <span className="quick-prompt-label">🗺️ 帮我规划成都5天研学</span>
+                    </button>
+                    <button
+                      className="quick-prompt-btn"
+                      style={{ "--accent": "#01c3a3" } as React.CSSProperties}
+                      onClick={() => setActiveTab("report")}
+                    >
+                      <span className="quick-prompt-label">📝 生成我的研学报告</span>
+                    </button>
+                    <button
+                      className="quick-prompt-btn quick-prompt-btn--biz"
+                      style={{ "--accent": "#01c3a3" } as React.CSSProperties}
+                      onClick={() => router.push("/biz")}
+                    >
+                      <span className="quick-prompt-label">🏫 帮我配置研学方案</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -771,6 +766,39 @@ ${summary || "（用户未填写具体内容）"}
                   />
                 </div>
 
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="contactName">
+                      联系人
+                    </label>
+                    <input
+                      id="contactName"
+                      type="text"
+                      className="form-input"
+                      placeholder="姓名"
+                      value={itineraryForm.contactName}
+                      onChange={(e) =>
+                        setItineraryForm((f) => ({ ...f, contactName: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="contactPhone">
+                      联系电话
+                    </label>
+                    <input
+                      id="contactPhone"
+                      type="tel"
+                      className="form-input"
+                      placeholder="手机号"
+                      value={itineraryForm.contactPhone}
+                      onChange={(e) =>
+                        setItineraryForm((f) => ({ ...f, contactPhone: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
                 <button
                   className="generate-btn"
                   onClick={handleGenerateItinerary}
@@ -812,7 +840,7 @@ ${summary || "（用户未填写具体内容）"}
                         className="back-btn"
                         onClick={() => {
                           setItineraryResult("");
-                          setItineraryForm({ destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "" });
+                          setItineraryForm({ destination: "西安", days: "1", grade: "初中生", interest: "", intentionBase: "", contactName: "", contactPhone: "" });
                         }}
                       >
                         ← 重填
@@ -985,25 +1013,32 @@ ${summary || "（用户未填写具体内容）"}
 
                 <div className="form-group">
                   <label className="form-label" htmlFor="rsummary">
-                    研学概要（选填）
+                    研学概要 <span style={{ fontSize: "12px", color: "#f59e0b", fontWeight: 500 }}>（必填，不少于15字）</span>
                   </label>
                   <textarea
                     id="rsummary"
                     className="form-input"
-                    placeholder="请简述这次研学的主要内容和亮点..."
+                    placeholder="请描述这次研学的主要内容和亮点，例如去了哪些地方、学到了什么、有哪些深刻体验..."
                     rows={3}
                     style={{ resize: "none", fieldSizing: "content" }}
                     value={reportForm.summary}
-                    onChange={(e) =>
-                      setReportForm((f) => ({ ...f, summary: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setReportForm((f) => ({ ...f, summary: e.target.value }));
+                      if (reportFieldError) setReportFieldError("");
+                    }}
                   />
                 </div>
+
+                {reportFieldError && (
+                  <div style={{ color: "#dc2626", fontSize: "13px", padding: "10px 12px", background: "#fef2f2", borderRadius: "8px", border: "1px solid #fecaca", marginBottom: "8px" }}>
+                    ⚠️ {reportFieldError}
+                  </div>
+                )}
 
                 <button
                   className="generate-btn"
                   onClick={handleGenerateReport}
-                  disabled={!reportForm.name.trim() || !reportForm.theme.trim() || !reportForm.base.trim() || reportLoading}
+                  disabled={(!reportForm.name.trim() || !reportForm.theme.trim() || !reportForm.base.trim() || !!reportFieldError) && !reportLoading}
                 >
                   {reportLoading ? (
                     <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE, streamChatViaAPI } from "@/lib/minimax";
 import { SchoolPosterModal, SchoolPosterProps } from "@/components/SchoolPosterCanvas";
 import { OrgPosterModal, OrgPosterProps } from "@/components/OrgPosterCanvas";
+import ConfirmModal from "@/components/ConfirmModal";
 
 type BizType = "org" | "school";
 
@@ -20,6 +21,38 @@ export default function BizPage() {
   const [showOrgPosterModal, setShowOrgPosterModal] = useState(false);
   const [orgPosterProps, setOrgPosterProps] = useState<OrgPosterProps | null>(null);
   const [bizFieldError, setBizFieldError] = useState<string>("");
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const getConfirmFields = () => {
+    if (bizType === "org") {
+      return [
+        { label: "机构名称", value: orgForm.name },
+        { label: "机构类型", value: orgForm.type },
+        { label: "所在地", value: orgForm.location },
+        { label: "适合年龄", value: orgForm.targetAge },
+        { label: "核心特色", value: orgForm.features },
+        { label: "参考价格", value: orgForm.price },
+        { label: "联系人", value: orgForm.contactName },
+        { label: "联系电话", value: orgForm.contactPhone },
+      ];
+    } else {
+      return [
+        { label: "学校名称", value: schoolForm.name },
+        { label: "参与年级", value: schoolForm.grade },
+        { label: "活动天数", value: schoolForm.days },
+        { label: "研学主题", value: schoolForm.theme },
+        { label: "活动地点", value: schoolForm.location },
+        { label: "预算范围", value: schoolForm.budget },
+        { label: "联系人", value: schoolForm.contactName },
+        { label: "联系电话", value: schoolForm.contactPhone },
+      ];
+    }
+  };
+
+  const handleConfirmAndGenerate = () => {
+    setShowConfirm(false);
+    handleGenerate();
+  };
 
   const extractSchoolPosterInfo = (resultText: string): SchoolPosterProps => {
     const getMatch = (pattern: RegExp, defaultValue: string): string => {
@@ -163,7 +196,8 @@ export default function BizPage() {
 所在地：${orgForm.location || "待填写"}
 适合年龄：${orgForm.targetAge}
 参考价格：${orgForm.price || "待填写"}
-联系方式：待填写`;
+联系人：${orgForm.contactName || "待填写"}
+联系方式：${orgForm.contactPhone || "待填写"}`;
 
   const buildSchoolPrompt = () =>
     `你是一位专业的学校研学活动策划专家。请为以下学校生成一套完整的研学活动方案：
@@ -206,24 +240,10 @@ export default function BizPage() {
 活动亮点1：请从上述方案中提取1个最具吸引力的亮点（15字以内）
 活动亮点2：请从上述方案中提取1个最具吸引力的亮点（15字以内）
 活动亮点3：请从上述方案中提取1个最具吸引力的亮点（15字以内）
-联系方式：待填写`;
+联系人：${schoolForm.contactName || "待填写"}
+联系方式：${schoolForm.contactPhone || "待填写"}`;
 
   const handleGenerate = async () => {
-    // ── 字段校验 ──
-    const errs: string[] = [];
-    if (bizType === "org") {
-      if (!orgForm.name.trim()) errs.push("请填写机构名称");
-      if (!orgForm.location.trim()) errs.push("请填写所在地");
-      if (!orgForm.features.trim()) errs.push("请填写核心特色");
-      if (orgForm.features.trim().length > 0 && orgForm.features.trim().length < 15)
-        errs.push("核心特色至少填写15个字（例如：专注青少年科技创新教育，拥有10年经验）");
-    } else {
-      if (!schoolForm.name.trim()) errs.push("请填写学校名称");
-      if (!schoolForm.theme.trim()) errs.push("请填写研学主题");
-      if (!schoolForm.location.trim()) errs.push("请填写活动地点");
-    }
-    if (errs.length > 0) { setBizFieldError(errs[0]); return; }
-    setBizFieldError("");
 
     const prompt = bizType === "org" ? buildOrgPrompt() : buildSchoolPrompt();
     setLoading(true);
@@ -536,7 +556,23 @@ export default function BizPage() {
               )}
 
               <button
-                onClick={handleGenerate}
+                onClick={() => {
+                  const errs: string[] = [];
+                  if (bizType === "org") {
+                    if (!orgForm.name.trim()) errs.push("请填写机构名称");
+                    if (!orgForm.location.trim()) errs.push("请填写所在地");
+                    if (!orgForm.features.trim()) errs.push("请填写核心特色");
+                    if (orgForm.features.trim().length > 0 && orgForm.features.trim().length < 15)
+                      errs.push("核心特色至少填写15个字（例如：专注青少年科技创新教育，拥有10年经验）");
+                  } else {
+                    if (!schoolForm.name.trim()) errs.push("请填写学校名称");
+                    if (!schoolForm.theme.trim()) errs.push("请填写研学主题");
+                    if (!schoolForm.location.trim()) errs.push("请填写活动地点");
+                  }
+                  if (errs.length > 0) { setBizFieldError(errs[0]); return; }
+                  setBizFieldError("");
+                  setShowConfirm(true);
+                }}
                 disabled={!canGenerate || loading}
                 style={{
                   width: "100%",
@@ -682,6 +718,14 @@ export default function BizPage() {
           </>
         )}
       </div>
+
+      <ConfirmModal
+        visible={showConfirm}
+        title="确认提交"
+        fields={getConfirmFields()}
+        onConfirm={handleConfirmAndGenerate}
+        onCancel={() => setShowConfirm(false)}
+      />
 
       {showPosterModal && posterProps && (
         <SchoolPosterModal

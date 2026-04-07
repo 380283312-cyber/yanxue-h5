@@ -9,6 +9,7 @@ import ShareModal from "@/components/ShareModal";
 import PosterCanvas from "@/components/PosterCanvas";
 import ReportPosterCanvas from "@/components/ReportPosterCanvas";
 import PaywallModal from "@/components/PaywallModal";
+import ConfirmModal from "@/components/ConfirmModal";
 import ItineraryShareSheet from "@/components/ItineraryShareSheet";
 import { buildSystemPrompt, FRIENDLY_ERROR_MESSAGE, streamChatViaAPI } from "@/lib/minimax";
 import { checkUsage, recordUsage, getRemaining } from "@/lib/useUsageTracker";
@@ -114,6 +115,31 @@ export default function HomePage() {
   const setReportResult = reportStore.setResult;
   const setReportLoading = reportStore.setIsLoading;
   const [reportFieldError, setReportFieldError] = useState<string>("");
+
+  // Confirm modal states
+  const [showItineraryConfirm, setShowItineraryConfirm] = useState(false);
+  const [showReportConfirm, setShowReportConfirm] = useState(false);
+
+  const itineraryConfirmFields = () => [
+    { label: "目的地", value: itineraryForm.destination },
+    { label: "天数", value: itineraryForm.days },
+    { label: "年级", value: itineraryForm.grade },
+    { label: "兴趣方向", value: itineraryForm.interest },
+    { label: "意向基地", value: itineraryForm.intentionBase },
+    { label: "联系人", value: itineraryForm.contactName },
+    { label: "联系电话", value: itineraryForm.contactPhone },
+  ];
+
+  const reportConfirmFields = () => [
+    { label: "学生姓名", value: reportForm.name },
+    { label: "学校", value: reportForm.school },
+    { label: "年级", value: reportForm.grade },
+    { label: "研学基地", value: reportForm.base },
+    { label: "研学主题", value: reportForm.theme },
+    { label: "时间", value: reportForm.date },
+    { label: "地点", value: reportForm.location },
+    { label: "研学概要", value: reportForm.summary },
+  ];
 
   // Share modal state
   const [shareVisible, setShareVisible] = useState(false);
@@ -337,8 +363,6 @@ export default function HomePage() {
 
   const handleGenerateItinerary = useCallback(async () => {
     const { destination, days, grade, interest } = itineraryForm;
-    if (!destination.trim()) return;
-
     const status = checkUsage();
     if (!status.allowed) {
       openPaywall("itinerary");
@@ -392,19 +416,6 @@ export default function HomePage() {
 
   const handleGenerateReport = useCallback(async () => {
     const { name, school, grade, theme, date, location, summary, base } = reportForm;
-
-    // ── 字段校验：核心字段必填，研学概要不少于15字 ──
-    const errors: string[] = [];
-    if (!name.trim()) errors.push("请填写学生姓名");
-    if (!base.trim()) errors.push("请填写研学基地");
-    if (!theme.trim()) errors.push("请填写研学主题");
-    if (summary.trim().length > 0 && summary.trim().length < 15) errors.push("研学概要至少填写15个字，请描述这次研学的主要内容和亮点");
-
-    if (errors.length > 0) {
-      setReportFieldError(errors[0]);
-      return;
-    }
-    setReportFieldError("");
 
     const status = checkUsage();
     if (!status.allowed) {
@@ -801,7 +812,11 @@ ${summary || "（用户未填写具体内容）"}
 
                 <button
                   className="generate-btn"
-                  onClick={handleGenerateItinerary}
+                  onClick={() => {
+                  const { destination } = itineraryForm;
+                  if (!destination.trim()) return;
+                  setShowItineraryConfirm(true);
+                }}
                   disabled={!itineraryForm.destination.trim() || itineraryLoading}
                 >
                   {itineraryLoading ? (
@@ -873,6 +888,21 @@ ${summary || "（用户未填写具体内容）"}
                 intentionBase={itineraryForm.intentionBase}
               />
             )}
+
+            <ConfirmModal
+              visible={showItineraryConfirm}
+              title="确认行程规划"
+              fields={itineraryConfirmFields()}
+              onConfirm={() => { setShowItineraryConfirm(false); handleGenerateItinerary(); }}
+              onCancel={() => setShowItineraryConfirm(false)}
+            />
+            <ConfirmModal
+              visible={showReportConfirm}
+              title="确认研学报告"
+              fields={reportConfirmFields()}
+              onConfirm={() => { setShowReportConfirm(false); handleGenerateReport(); }}
+              onCancel={() => setShowReportConfirm(false)}
+            />
           </div>
         </div>
 
@@ -1037,7 +1067,17 @@ ${summary || "（用户未填写具体内容）"}
 
                 <button
                   className="generate-btn"
-                  onClick={handleGenerateReport}
+                  onClick={() => {
+                  const errors: string[] = [];
+                  if (!reportForm.name.trim()) errors.push("请填写学生姓名");
+                  if (!reportForm.base.trim()) errors.push("请填写研学基地");
+                  if (!reportForm.theme.trim()) errors.push("请填写研学主题");
+                  if (reportForm.summary.trim().length > 0 && reportForm.summary.trim().length < 15)
+                    errors.push("研学概要至少填写15个字");
+                  if (errors.length > 0) { setReportFieldError(errors[0]); return; }
+                  setReportFieldError("");
+                  setShowReportConfirm(true);
+                }}
                   disabled={(!reportForm.name.trim() || !reportForm.theme.trim() || !reportForm.base.trim() || !!reportFieldError) && !reportLoading}
                 >
                   {reportLoading ? (

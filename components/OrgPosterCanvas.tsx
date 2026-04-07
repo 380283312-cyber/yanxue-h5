@@ -120,6 +120,67 @@ function drawPoster(ctx: CanvasRenderingContext2D, props: OrgPosterProps) {
   ctx.lineTo(WIDTH - 20, lineY);
   ctx.stroke();
 
+  // ── 课程模块 ──
+  lineY += 24;
+  ctx.fillStyle = COLORS.accent;
+  ctx.font = "bold 15px 'Noto Sans SC', sans-serif";
+  ctx.fillText("📖 课程模块", 24, lineY);
+  lineY += 22;
+  const modules = ["历史文化探索", "科学实践体验", "团队协作训练", "艺术创意工坊"];
+  const modW = (WIDTH - 56) / 2;
+  modules.forEach((mod, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const mx = 20 + col * (modW + 8);
+    const my = lineY + row * 40;
+    ctx.fillStyle = "#f0fdf4";
+    ctx.beginPath();
+    ctx.roundRect(mx, my, modW, 34, 5);
+    ctx.fill();
+    ctx.fillStyle = COLORS.primary;
+    ctx.font = "12px 'Noto Sans SC', sans-serif";
+    ctx.fillText("◆ " + mod, mx + 8, my + 22);
+  });
+  lineY += Math.ceil(modules.length / 2) * 40 + 12;
+
+  ctx.strokeStyle = COLORS.border;
+  ctx.beginPath();
+  ctx.moveTo(20, lineY);
+  ctx.lineTo(WIDTH - 20, lineY);
+  ctx.stroke();
+
+  // ── 服务优势 ──
+  lineY += 24;
+  ctx.fillStyle = COLORS.accent;
+  ctx.font = "bold 15px 'Noto Sans SC', sans-serif";
+  ctx.fillText("✨ 服务优势", 24, lineY);
+  lineY += 22;
+  const advantages = [
+    { icon: "🏆", text: "专业师资团队" },
+    { icon: "🛡️", text: "安全保障体系" },
+    { icon: "📋", text: "完整研学手册" },
+    { icon: "🎓", text: "官方认证资质" },
+  ];
+  advantages.forEach((adv, i) => {
+    const ax = 20 + i * ((WIDTH - 40) / 4);
+    ctx.fillStyle = "#fff7ed";
+    ctx.beginPath();
+    ctx.roundRect(ax, lineY, (WIDTH - 56) / 4, 50, 5);
+    ctx.fill();
+    ctx.font = "16px 'Noto Sans SC', sans-serif";
+    ctx.fillText(adv.icon, ax + ((WIDTH - 56) / 4) / 2 - 8, lineY + 18);
+    ctx.fillStyle = COLORS.text;
+    ctx.font = "11px 'Noto Sans SC', sans-serif";
+    ctx.fillText(adv.text, ax + 4, lineY + 36);
+  });
+  lineY += 58;
+
+  ctx.strokeStyle = COLORS.border;
+  ctx.beginPath();
+  ctx.moveTo(20, lineY);
+  ctx.lineTo(WIDTH - 20, lineY);
+  ctx.stroke();
+
   // 适合人群
   lineY += 25;
   ctx.fillStyle = COLORS.text;
